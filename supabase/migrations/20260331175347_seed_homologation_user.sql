@@ -1,0 +1,8 @@
+-- ============================================================
+-- SEED DE HOMOLOGAÇÃO — REMOVIDO POR SEGURANÇA
+-- ============================================================
+-- Este arquivo criava um usuário de teste (homologacao@pagseguro.com.br)
+-- para testes de integração com o PagBank.
+-- Foi esvaziado para evitar a criação de contas conhecidas em produção.
+-- Para testes locais, crie o usuário manualmente via Supabase Studio.
+-- ============================================================

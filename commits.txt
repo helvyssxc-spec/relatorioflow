@@ -1,0 +1,5 @@
+﻿4af54ca fix(db): Add missing professional_role, register routes and fix marking notifications read
+7636194 fix(db): Add missing professional_role, register routes and fix marking notifications read
+69a75cb feat(ux): atualizacao premium do design system, dashboard e geracao de relatorios com efeito glassmorphism e skeletons
+2bfe28e Primeiro commit local (configura├º├úo Supabase Pr├│prio e depend├¬ncias)
+13af8fb Update site info for publish

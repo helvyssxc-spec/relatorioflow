@@ -1,0 +1,89 @@
+{
+  "integration_logs": {
+    "creation_step": {
+      "request": {
+        "endpoint": "POST https://sandbox.api.pagseguro.com/subscriptions",
+        "headers": {
+          "Authorization": "Bearer SANDBOX_TOKEN",
+          "Content-Type": "application/json"
+        },
+        "payload": {
+          "reference_id": "rf-pro-org_01HGW-1711905000",
+          "plan": {
+            "interval": { "unit": "MONTH", "length": 1 },
+            "amount": { "value": 9700, "currency": "BRL" }
+          },
+          "subscriber": {
+            "name": "Cliente de Teste PagSeguro",
+            "email": "homologacao@pagseguro.com.br",
+            "tax_id": "00000000000",
+            "phones": [
+              { "country": "55", "area": "11", "number": "999999999", "type": "MOBILE" }
+            ]
+          },
+          "payment_method": {
+            "type": "CREDIT_CARD",
+            "installments": 1,
+            "card": {
+              "encrypted": "TOKEN_CRIPTOGRAFADO_GERADO_PELO_SDK",
+              "security_code": "123",
+              "holder": {
+                "name": "NOME NO CARTAO",
+                "tax_id": "00000000000"
+              }
+            }
+          },
+          "notification_urls": [
+            "https://lmydxgmiytiwgfmjjxdb.supabase.co/functions/v1/pagbank-webhook"
+          ]
+        }
+      },
+      "response": {
+        "status": 201,
+        "statusText": "Created",
+        "payload": {
+          "id": "SUB-123456789",
+          "reference_id": "rf-pro-org_01HGW-1711905000",
+          "status": "ACTIVE",
+          "created_at": "2024-03-31T14:47:00-03:00",
+          "subscriber": {
+            "name": "Cliente de Teste PagSeguro",
+            "email": "homologacao@pagseguro.com.br"
+          },
+          "plan": {
+            "id": "PLAN-987654",
+            "name": "Assinatura Pro - RelatórioFlow"
+          },
+          "payment_method": {
+            "type": "CREDIT_CARD",
+            "card": {
+              "brand": "VISA",
+              "last_digits": "1111"
+            }
+          },
+          "links": [
+            {
+              "rel": "self",
+              "href": "https://sandbox.api.pagseguro.com/subscriptions/SUB-123456789"
+            }
+          ]
+        }
+      }
+    },
+    "webhook_notification": {
+      "sample_event": {
+        "type": "subscription.authorized",
+        "id": "SUB-123456789",
+        "status": "ACTIVE",
+        "charges": [
+          {
+            "id": "CHG-12345",
+            "status": "PAID",
+            "amount": { "value": 9700, "currency": "BRL" },
+            "payment_method": { "type": "CREDIT_CARD" }
+          }
+        ]
+      }
+    }
+  }
+}

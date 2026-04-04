@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anon can insert payment events" ON public.payment_events;

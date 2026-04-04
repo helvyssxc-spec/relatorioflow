@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r from.*organizations.*select 'c:\\\\Users\\\\Itanna Nascimento\\\\.gemini\\\\antigravity\\\\scratch\\\\relatorioflow\\\\src' --include=*.tsx --include=*.ts)",
+      "Bash(supabase --version)",
+      "Bash(supabase status:*)",
+      "Bash(where supabase:*)",
+      "Bash(npx supabase:*)",
+      "Bash(start \"https://minha.conta.pagseguro.com.br/aplicacao/detalhe/\")",
+      "Bash(grep -r import.*froms*[''] c:UsersHelvysCastro.geminiantigravityscratchRelatórioFlow/src --include=*.tsx --include=*.ts)",
+      "Bash(npx vercel:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(curl -s -X POST https://lmydxgmiytiwgfmjjxdb.supabase.co/functions/v1/generate-report -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJtest' -d '{\"notes\":\"teste\",\"action\":\"generate\"}')",
+      "Bash(curl -s -X POST https://lmydxgmiytiwgfmjjxdb.supabase.co/functions/v1/generate-report -H 'Content-Type: application/json' -H 'Authorization: Bearer sb_publishable_QxQMF9J9gXW8TmUxnB0NVw_G0x1y-Zg' -d '{\"notes\":\"teste\",\"action\":\"generate\"}')",
+      "Bash(npx tsc:*)",
+      "Bash(grep -r \"process.env\\\\|Deno.env.get\" /c/Users/HelvysCastro/.gemini/antigravity/scratch/RelatórioFlow/supabase/functions/*.ts)",
+      "Bash(find /c/Users/HelvysCastro/.gemini/antigravity/scratch/RelatórioFlow/supabase/functions -name \"index.ts\" -exec grep -l \"Deno.env.get\\\\|process.env\" {} \\\\;)",
+      "Bash(git -C /c/Users/HelvysCastro/.gemini/antigravity/scratch/RelatórioFlow log --oneline --all)",
+      "Bash(git -C /c/Users/HelvysCastro/.gemini/antigravity/scratch/RelatórioFlow show HEAD:.env)",
+      "Bash(grep -rn \"payment_events\" supabase/migrations/*.sql)",
+      "Bash(grep -rn \"subscriptions.*DELETE\\\\|DELETE.*subscriptions\" supabase/migrations/*.sql)",
+      "Bash(grep -rn \"pagbank_card_token\" supabase/migrations/*.sql src/ --include=\"*.sql\" --include=\"*.ts\" --include=\"*.tsx\")",
+      "Bash(grep -A5 \"waitlist\" supabase/migrations/*.sql)",
+      "Bash(curl -s -X PATCH \"https://api.supabase.com/v1/projects/lmydxgmiytiwgfmjjxdb/config/auth\" -H \"Authorization: Bearer sbp_28df788eb31d9ed0b04fdaaa5d445b2cac23722a\" -H \"Content-Type: application/json\" -d '{\"\"password_hibp_enabled\"\": true}')",
+      "Bash(grep -n \"handle_new_user\\\\|on_auth_user_created\\\\|CREATE.*FUNCTION.*handle_new\" supabase/migrations/*.sql)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_28df788eb31d9ed0b04fdaaa5d445b2cac23722a npx supabase gen types typescript --project-id lmydxgmiytiwgfmjjxdb)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -n \"org-assets\\\\|logos\" supabase/migrations/*.sql)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./package.json'\\); console.log\\(JSON.stringify\\(d.scripts, null, 2\\)\\)\")"
+    ]
+  }
+}

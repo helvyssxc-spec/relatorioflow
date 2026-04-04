@@ -1,0 +1,1 @@
+DELETE FROM public.profiles WHERE org_id IS NULL;

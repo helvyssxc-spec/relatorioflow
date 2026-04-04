@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gerar Token Sandbox — PagBank Homologação</title>
+  <style>
+    body { font-family: monospace; padding: 2rem; background: #0a0f1e; color: #e2e8f0; max-width: 700px; margin: 0 auto; }
+    h2  { color: #1A56DB; }
+    .card { background: #1e293b; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+    label { display: block; margin-bottom: 0.25rem; color: #94a3b8; font-size: 0.85rem; }
+    input { width: 100%; padding: 0.5rem; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #fff; margin-bottom: 1rem; box-sizing: border-box; }
+    button { background: #1A56DB; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    button:hover { background: #1d4ed8; }
+    #resultado { margin-top: 1.5rem; }
+    #token-box { background: #0f172a; border: 1px solid #22c55e; padding: 1rem; border-radius: 6px; word-break: break-all; font-size: 0.75rem; color: #22c55e; }
+    #curl-box  { background: #0f172a; border: 1px solid #f59e0b; padding: 1rem; border-radius: 6px; word-break: break-all; font-size: 0.72rem; color: #fbbf24; white-space: pre-wrap; margin-top: 1rem; }
+    .erro { color: #f87171; }
+    .ok   { color: #22c55e; }
+  </style>
+</head>
+<body>
+  <h2>🔑 Gerador de Token — PagBank Sandbox</h2>
+  <p style="color:#94a3b8">Preencha os dados do cartão de teste e clique em <strong>Gerar Token</strong>. O token gerado já expira em minutos — use imediatamente no curl.</p>
+
+  <div class="card">
+    <label>Chave Pública Sandbox (PAGBANK_PUBLIC_KEY)</label>
+    <input id="pubkey" type="text" placeholder="Cole aqui sua PAGBANK_PUBLIC_KEY sandbox" />
+
+    <label>Número do cartão (teste sandbox)</label>
+    <input id="number" type="text" value="4111111111111111" />
+
+    <label>Validade (MM/AAAA)</label>
+    <input id="expiry" type="text" value="12/2030" />
+
+    <label>CVV</label>
+    <input id="cvv" type="text" value="123" />
+
+    <label>Nome do titular</label>
+    <input id="name" type="text" value="HOMOLOGACAO PAGBANK" />
+
+    <button onclick="gerarToken()">⚡ Gerar Token</button>
+  </div>
+
+  <div id="resultado" style="display:none">
+    <div class="card">
+      <p class="ok">✅ Token gerado com sucesso!</p>
+      <label>encrypted_card (copie este valor):</label>
+      <div id="token-box"></div>
+
+      <label style="margin-top:1rem">Comando curl completo (pronto para rodar no terminal):</label>
+      <div id="curl-box"></div>
+
+      <button onclick="copiarCurl()" style="margin-top:1rem; background:#059669">📋 Copiar curl</button>
+    </div>
+  </div>
+
+  <div id="erro" style="display:none" class="card erro"></div>
+
+  <!-- PagBank.js Sandbox -->
+  <script src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"></script>
+  <script>
+    async function gerarToken() {
+      const pubkey  = document.getElementById("pubkey").value.trim();
+      const number  = document.getElementById("number").value.replace(/\s/g, "");
+      const expiry  = document.getElementById("expiry").value.trim();
+      const cvv     = document.getElementById("cvv").value.trim();
+      const name    = document.getElementById("name").value.trim();
+
+      document.getElementById("resultado").style.display = "none";
+      document.getElementById("erro").style.display = "none";
+
+      if (!pubkey) { mostrarErro("Cole a PAGBANK_PUBLIC_KEY antes de gerar."); return; }
+
+      try {
+        const [expMonth, expYear] = expiry.split("/");
+
+        const card = PagSeguro.encryptCard({
+          publicKey: pubkey,
+          holder:    name,
+          number,
+          expMonth,
+          expYear,
+          securityCode: cvv,
+        });
+
+        if (card.hasErrors) {
+          mostrarErro("Erro ao encriptar: " + JSON.stringify(card.errors));
+          return;
+        }
+
+        const token = card.encryptedCard;
+        document.getElementById("token-box").textContent = token;
+
+        const curl = `curl -X POST https://lmydxgmiytiwgfmjjxdb.supabase.co/functions/v1/pagbank-sandbox-test \\
+  -H "Content-Type: application/json" \\
+  -d '{
+  "secret": "PAGBANK_HOMOLOG_2026",
+  "encrypted_card": "${token}"
+}'`;
+        document.getElementById("curl-box").textContent = curl;
+        document.getElementById("resultado").style.display = "block";
+      } catch(e) {
+        mostrarErro("Exceção: " + e.message);
+      }
+    }
+
+    function mostrarErro(msg) {
+      const el = document.getElementById("erro");
+      el.textContent = "❌ " + msg;
+      el.style.display = "block";
+    }
+
+    function copiarCurl() {
+      const txt = document.getElementById("curl-box").textContent;
+      navigator.clipboard.writeText(txt).then(() => alert("Copiado!"));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - list
+    - region "Notifications alt+T"
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: RelatórioFlow
+                - generic:
+                  - generic:
+                    - list:
+                      - listitem:
+                        - link:
+                          - /url: /dashboard
+                          - img
+                          - generic: Dashboard
+                      - listitem:
+                        - link:
+                          - /url: /reports
+                          - img
+                          - generic: Histórico
+                - generic:
+                  - generic:
+                    - list:
+                      - listitem:
+                        - link:
+                          - /url: /support
+                          - img
+                          - generic: Suporte
+                      - listitem:
+                        - link:
+                          - /url: /settings
+                          - img
+                          - generic: Configurações
+                      - listitem:
+                        - link:
+                          - /url: /billing
+                          - img
+                          - generic: Planos
+              - generic:
+                - button:
+                  - img
+                  - generic: Ver tutorial
+                - button:
+                  - img
+                  - generic: Sair
+        - generic:
+          - banner:
+            - generic:
+              - button:
+                - img
+                - generic: Toggle Sidebar
+              - heading [level=1]: Novo Relatório
+            - generic:
+              - button:
+                - img
+              - generic: A
+          - main:
+            - generic:
+              - generic:
+                - heading [level=2]: Olá, usuário 👋
+                - paragraph: Preencha os campos abaixo e a IA transforma tudo em um relatório profissional.
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: Relatórios este mês
+                      - generic: Starter
+                    - generic: 0 / 5
+                  - progressbar
+                  - paragraph:
+                    - img
+                    - text: Seus relatórios são guardados por
+                    - generic: 30 dias
+                    - text: no plano Starter.
+                    - link:
+                      - /url: /billing
+                      - text: Ver planos →
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic: Identificação
+                      - generic: Tipo · Número · Data · Local
+                    - generic:
+                      - generic:
+                        - text: Tipo de relatório
+                        - combobox:
+                          - generic: Relatório Técnico
+                          - img
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Número do documento
+                        - textbox:
+                          - /placeholder: "Ex: RF-2026-001"
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Data
+                        - textbox: 2026-04-02
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Local / Endereço
+                        - textbox:
+                          - /placeholder: "Ex: Rua das Flores, 123 — São Paulo, SP"
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic: Cliente e responsável
+                    - generic:
+                      - generic:
+                        - text: Nome do cliente
+                        - textbox:
+                          - /placeholder: "Ex: João da Silva"
+                      - generic:
+                        - text: Empresa do cliente
+                        - textbox:
+                          - /placeholder: "Ex: Construtora XYZ Ltda"
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Responsável técnico
+                        - textbox:
+                          - /placeholder: Nome do responsável
+                      - generic:
+                        - text: Cargo / função
+                        - textbox:
+                          - /placeholder: "Ex: Engenheiro Civil, CREA 12345"
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Equipe / profissionais
+                        - generic:
+                          - generic: 0/3
+                          - generic:
+                            - img
+                    - generic:
+                      - generic:
+                        - button:
+                          - img
+                          - text: Adicionar profissional
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic: Atividades realizadas
+                      - generic: Campo principal — a IA expande aqui
+                    - textbox:
+                      - /placeholder: "Ex: realizei manutenção preventiva no sistema elétrico, substituí disjuntores do quadro principal..."
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Ocorrências / não conformidades
+                        - generic:
+                          - generic: Opcional
+                          - generic:
+                            - img
+                    - generic:
+                      - textbox:
+                        - /placeholder: "Ex: atraso na entrega de material pelo fornecedor, chuva impediu serviços externos..."
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Materiais e equipamentos
+                        - generic:
+                          - generic: 0/5 itens
+                          - generic:
+                            - img
+                    - generic:
+                      - generic:
+                        - button:
+                          - img
+                          - text: Adicionar item
+                  - generic:
+                    - button [expanded]:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Fotos do local / serviço
+                        - generic:
+                          - generic: 0/1 · Starter
+                          - generic:
+                            - img
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                        - generic:
+                          - generic: Adicionar fotos
+                          - generic: PNG, JPG ou JPEG (Máximo 1 fotos)
+                  - generic:
+                    - generic:
+                      - text: Logo da empresa no relatório
+                      - generic:
+                        - img
+                        - text: Business
+                    - generic:
+                      - paragraph:
+                        - img
+                        - text: Disponível no plano Business.
+                        - link:
+                          - /url: /billing
+                          - text: Fazer upgrade
+                  - button [disabled]:
+                    - img
+                    - text: Gerar Relatório Profissional
+  - dialog [ref=e2]:
+    - progressbar [ref=e4]
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - paragraph [ref=e8]: 🚀
+        - heading "Bem-vindo ao RelatórioFlow! 👋" [level=3] [ref=e9]
+      - paragraph [ref=e10]: Em menos de 2 minutos você vai aprender a transformar suas anotações em relatórios profissionais com IA. Vamos começar?
+      - button "Próximo" [active] [ref=e19] [cursor=pointer]:
+        - text: Próximo
+        - img
+      - button "Pular tutorial" [ref=e20] [cursor=pointer]
+    - generic [ref=e22]: 1 de 6
+    - button "Close" [ref=e23] [cursor=pointer]:
+      - img [ref=e24]
+      - generic [ref=e27]: Close
+```

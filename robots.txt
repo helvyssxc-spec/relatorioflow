@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /reports
+Disallow: /settings
+Disallow: /billing
+Disallow: /support
+Disallow: /admin
+Disallow: /onboarding
+
+Sitemap: https://relatorioflow.com.br/sitemap.xml
