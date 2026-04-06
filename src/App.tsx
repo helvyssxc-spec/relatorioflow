@@ -1,93 +1,68 @@
-import { lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { PlanSimulationProvider } from "@/hooks/usePlanSimulation";
-import PlanSimulationBanner from "@/components/PlanSimulationBanner";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminRoute from "@/components/AdminRoute";
-import { Skeleton } from "@/components/ui/skeleton";
-import Index from "./pages/Index";
-import Maintenance from "./pages/Maintenance";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import ForgotPassword from "./pages/ForgotPassword";
-import Onboarding from "./pages/Onboarding";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/hooks/useAuth'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AppLayout } from '@/components/layout/AppLayout'
 
-const Reports = lazy(() => import("./pages/Reports"));
-const Billing = lazy(() => import("./pages/Billing"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Admin = lazy(() => import("./pages/Admin"));
-const Support = lazy(() => import("./pages/Support"));
-const Terms = lazy(() => import("./pages/Terms"));
-const Privacy = lazy(() => import("./pages/Privacy"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Schedules = lazy(() => import("./pages/Schedules"));
-const Templates = lazy(() => import("./pages/Templates"));
-const DataSources = lazy(() => import("./pages/DataSources"));
+// Pages
+import Index from '@/pages/Index'
+import Login from '@/pages/Login'
+import Register from '@/pages/Register'
+import Dashboard from '@/pages/Dashboard'
+import NewReport from '@/pages/NewReport'
+import DiarioObra from '@/pages/DiarioObra'
+import RelatorioTecnico from '@/pages/RelatorioTecnico'
+import ReportView from '@/pages/ReportView'
+import Reports from '@/pages/Reports'
+import Settings from '@/pages/Settings'
+import Checkout from '@/pages/Checkout'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
       retry: 1,
     },
   },
-});
+})
 
-function PageLoader() {
+export default function App() {
   return (
-    <div className="flex-1 p-6 space-y-4">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-72" />
-      <Skeleton className="h-64 w-full" />
-    </div>
-  );
-}
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <PlanSimulationProvider>
-            <PlanSimulationBanner />
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/home" element={<Index />} />
-                <Route path="/aguarde" element={<Maintenance />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-                <Route path="/schedules" element={<ProtectedRoute><Schedules /></ProtectedRoute>} />
-                <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-                <Route path="/data-sources" element={<ProtectedRoute><DataSources /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </PlanSimulationProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Register />} />
+
+            {/* Protected */}
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="relatorio/novo" element={<NewReport />} />
+              <Route path="relatorio/novo/diario" element={<DiarioObra />} />
+              <Route path="relatorio/novo/tecnico" element={<RelatorioTecnico />} />
+              <Route path="relatorio/:id" element={<ReportView />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="configuracoes" element={<Settings />} />
+              <Route path="plano" element={<Checkout />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Toaster richColors position="top-right" />
         </AuthProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+    </QueryClientProvider>
+  )
+}

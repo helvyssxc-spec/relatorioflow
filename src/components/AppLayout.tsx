@@ -16,10 +16,9 @@ interface AppLayoutProps {
 }
 
 const mobileNav = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Criar" },
-  { to: "/reports", icon: Clock, label: "Histórico" },
-  { to: "/support", icon: LifeBuoy, label: "Suporte" },
-  { to: "/settings", icon: SettingsIcon, label: "Config" },
+  { to: "/app/dashboard", icon: LayoutDashboard, label: "Criar" },
+  { to: "/app/reports", icon: Clock, label: "Histórico" },
+  { to: "/app/configuracoes", icon: SettingsIcon, label: "Config" },
 ];
 
 const AppLayout = ({ children, title, showUpgrade = true }: AppLayoutProps) => {
@@ -32,40 +31,44 @@ const AppLayout = ({ children, title, showUpgrade = true }: AppLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background selection:bg-primary/20 selection:text-primary">
         <AppSidebar onOpenTutorial={tutorial.restart} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card">
-            <div className="flex items-center gap-3 min-w-0">
-              <SidebarTrigger />
-              <h1 className="text-lg font-semibold text-foreground truncate">{title}</h1>
+        <div className="flex-1 flex flex-col min-w-0 bg-background/50">
+          <header className="h-16 flex items-center justify-between border-b border-border/50 px-6 backdrop-blur-xl bg-background/80 sticky top-0 z-40">
+            <div className="flex items-center gap-4 min-w-0">
+              <SidebarTrigger className="hover:bg-primary/10 hover:text-primary transition-colors" />
+              <div className="h-4 w-px bg-border/50 hidden sm:block" />
+              <h1 className="text-sm font-bold tracking-tight text-foreground/80 uppercase truncate">{title}</h1>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
               {showUpgrade && (
-                <Button asChild variant="outline" size="sm" className="hidden sm:flex gap-1 text-primary border-primary/30">
-                  <Link to="/billing"><ArrowUpCircle className="h-4 w-4" /> Fazer upgrade</Link>
+                <Button asChild variant="outline" size="sm" className="hidden sm:flex gap-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary text-xs font-semibold px-4 transition-all hover:scale-105 active:scale-95">
+                  <Link to="/app/plano"><ArrowUpCircle className="h-3.5 w-3.5" /> Fazer upgrade</Link>
                 </Button>
               )}
               <NotificationBell />
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-primary/20 ring-4 ring-primary/10">
                 {initials}
               </div>
             </div>
           </header>
-          <main className="flex-1 p-3 sm:p-6 overflow-auto pb-20 md:pb-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-8 overflow-auto pb-24 md:pb-8 max-w-7xl mx-auto w-full animate-fade-in">
+            {children}
+          </main>
 
           {/* Mobile bottom navigation */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex items-center justify-around py-2 z-50">
+          <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm bg-background/80 backdrop-blur-2xl border border-border/50 flex items-center justify-around py-3 rounded-2xl z-50 shadow-2xl overflow-hidden ring-1 ring-black/5">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
             {mobileNav.map(item => (
               <Link
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors",
-                  location.pathname === item.to ? "text-primary" : "text-muted-foreground"
+                  "flex flex-col items-center gap-1 px-4 py-1 text-[10px] font-bold uppercase tracking-wider transition-all relative z-10",
+                  location.pathname === item.to ? "text-primary scale-110" : "text-muted-foreground/60 hover:text-muted-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={cn("h-5 w-5", location.pathname === item.to ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
                 {item.label}
               </Link>
             ))}

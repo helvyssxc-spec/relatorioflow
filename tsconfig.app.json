@@ -24,12 +24,22 @@
     "skipLibCheck": true,
     "strict": false,
     "target": "ES2020",
-    "types": [
-      "vitest/globals"
-    ],
+    "types": [],
     "useDefineForClassFields": true
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/components/billing",
+    "src/components/admin",
+    "src/components/landing",
+    "src/components/NotificationBell.tsx",
+    "src/components/PlanSimulationBanner.tsx",
+    "src/components/RetentionWarningBanner.tsx",
+    "src/components/AppLayout.tsx",
+    "src/components/AppSidebar.tsx",
+    "src/components/BrandPanel.tsx",
+    "src/components/InstallPrompt.tsx"
   ]
 }

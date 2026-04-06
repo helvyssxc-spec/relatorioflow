@@ -14,6 +14,186 @@ export type Database = {
   }
   public: {
     Tables: {
+      // ── RelatorioFlow MVP tables ──────────────────────────────────────
+      projects: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          address: string | null
+          client_name: string | null
+          art_rrt: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          address?: string | null
+          client_name?: string | null
+          art_rrt?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          address?: string | null
+          client_name?: string | null
+          art_rrt?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_reports: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          report_date: string
+          responsavel: string
+          condicao_tempo: string | null
+          temperatura: string | null
+          clima_json: Json
+          equipe: Json
+          atividades: Json
+          equipamentos: Json
+          ocorrencias: string | null
+          fotos: Json
+          status: string
+          pdf_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          report_date: string
+          responsavel: string
+          condicao_tempo?: string | null
+          temperatura?: string | null
+          clima_json?: Json
+          equipe?: Json
+          atividades?: Json
+          equipamentos?: Json
+          ocorrencias?: string | null
+          fotos?: Json
+          status?: string
+          pdf_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          responsavel?: string
+          condicao_tempo?: string | null
+          temperatura?: string | null
+          clima_json?: Json
+          equipe?: Json
+          atividades?: Json
+          equipamentos?: Json
+          ocorrencias?: string | null
+          fotos?: Json
+          status?: string
+          pdf_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      technical_reports: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          numero_relatorio: string
+          report_date: string
+          responsavel_tecnico: string
+          crea_cau: string | null
+          objetivo: string | null
+          metodologia: string | null
+          diagnostico: Json
+          conclusao: string | null
+          recomendacoes: Json
+          fotos_gerais: Json
+          status: string
+          pdf_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          numero_relatorio: string
+          report_date: string
+          responsavel_tecnico: string
+          crea_cau?: string | null
+          objetivo?: string | null
+          metodologia?: string | null
+          diagnostico?: Json
+          conclusao?: string | null
+          recomendacoes?: Json
+          fotos_gerais?: Json
+          status?: string
+          pdf_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          numero_relatorio?: string
+          report_date?: string
+          responsavel_tecnico?: string
+          crea_cau?: string | null
+          objetivo?: string | null
+          metodologia?: string | null
+          diagnostico?: Json
+          conclusao?: string | null
+          recomendacoes?: Json
+          fotos_gerais?: Json
+          status?: string
+          pdf_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pagbank_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          pagbank_order_id: string | null
+          event_type: string
+          status: string | null
+          amount: number | null
+          payload: Json
+          processed_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          pagbank_order_id?: string | null
+          event_type: string
+          status?: string | null
+          amount?: number | null
+          payload?: Json
+          processed_at?: string
+        }
+        Update: {
+          user_id?: string | null
+          status?: string | null
+          amount?: number | null
+          payload?: Json
+        }
+        Relationships: []
+      }
+      // ── End RelatorioFlow MVP tables ──────────────────────────────────
       api_keys: {
         Row: {
           created_at: string | null
@@ -371,6 +551,15 @@ export type Database = {
           org_id: string | null
           professional_role: string | null
           role: string
+          // RelatorioFlow MVP fields
+          company_name: string | null
+          crea_cau: string | null
+          logo_url: string | null
+          phone: string | null
+          has_access: boolean
+          pagbank_order_id: string | null
+          access_granted_at: string | null
+          updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -383,6 +572,14 @@ export type Database = {
           org_id?: string | null
           professional_role?: string | null
           role?: string
+          company_name?: string | null
+          crea_cau?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          has_access?: boolean
+          pagbank_order_id?: string | null
+          access_granted_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -395,6 +592,14 @@ export type Database = {
           org_id?: string | null
           professional_role?: string | null
           role?: string
+          company_name?: string | null
+          crea_cau?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          has_access?: boolean
+          pagbank_order_id?: string | null
+          access_granted_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
