@@ -1,3 +1,5 @@
+import { mdToHtml, mdCss } from './markdownToHtml'
+
 interface EquipeItem { nome: string; funcao: string; horas: number }
 interface AtividadeItem { descricao: string; disciplina: string; percentual_concluido: number; observacao?: string }
 interface EquipamentoItem { nome: string; quantidade: number; status: string }
@@ -24,340 +26,420 @@ interface DiarioObraPDFData {
   totalHorasAcumuladas?: number
 }
 
-function statusLabel(s: string) {
-  if (s === 'operando') return '<span style="color:#10b981; font-weight: bold;">● Ativo</span>'
-  if (s === 'parado') return '<span style="color:#ef4444; font-weight: bold;">● Parado</span>'
-  return '<span style="color:#f59e0b; font-weight: bold;">● Manutenção</span>'
+const TEMPO_OPCOES = ['Ensolarado', 'Parcialmente Nublado', 'Nublado', 'Chuva Fraca', 'Chuva Forte', 'Tempestade']
+
+function tempoIcon(t: string): string {
+  if (t.includes('Ensol')) return '☀'
+  if (t.includes('Parcial')) return '⛅'
+  if (t.includes('Nublado')) return '☁'
+  if (t.includes('Fraca')) return '🌦'
+  if (t.includes('Forte')) return '🌧'
+  if (t.includes('Temp')) return '⛈'
+  return '🌤'
+}
+
+function checkbox(checked: boolean) {
+  return checked
+    ? `<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #1e3a5f;background:#1e3a5f;border-radius:2px;text-align:center;line-height:14px;color:white;font-size:9px;">✓</span>`
+    : `<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #64748b;border-radius:2px;"></span>`
 }
 
 export function generateDiarioObraHTML(data: DiarioObraPDFData): string {
-  const dateStr = new Date(data.reportDate + 'T12:00:00').toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-  })
+  const dateObj = new Date(data.reportDate + 'T12:00:00')
+  const dateStr = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = dateObj.toLocaleDateString('pt-BR')
+  const rdoNum = data.reportDate.replace(/-/g, '')
+  const totalHoras = data.equipe.reduce((a, e) => a + (Number(e.horas) || 0), 0)
 
-  const totalHorasDia = data.equipe.reduce((acc, e) => acc + (Number(e.horas) || 0), 0)
-  const totalPessoas = data.equipe.length
+  // Contador dinâmico de seções — evita pulos na numeração
+  let sec = 0
+  const S = () => `<span class="num">${++sec}</span>`
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Diário de Obra — ${data.projectName}</title>
+  <title>RDO — ${data.projectName} — ${dateShort}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+    ${mdCss}
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      font-size: 10pt;
-      color: #0f172a;
-      background: #fafafa;
-      line-height: 1.5;
-      counter-reset: page;
-    }
-
-    /* Paginação */
-    @page {
-      size: A4;
-      margin: 2cm 1.5cm;
-    }
-
-    /* Print Specifics */
+    body { font-family: 'Inter', sans-serif; font-size: 9pt; color: #1e293b; background: #f1f5f9; line-height: 1.4; }
+    @page { size: A4; margin: 1.5cm 1.5cm 2cm; }
     @media print {
-      body { background: #white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
       .page-break { page-break-before: always; }
     }
+    .page { max-width: 210mm; margin: 0 auto; background: white; }
 
-    .container { max-width: 800px; margin: 0 auto; background: white; min-height: 29.7cm; position: relative; }
-
-    /* Header */
-    .header {
-      background: #1e1b4b;
-      color: white;
-      padding: 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 5px solid #4f46e5;
-    }
-    .header-left { display: flex; align-items: center; gap: 20px; }
-    .logo-box { width: 70px; height: 70px; background: white; border-radius: 12px; padding: 6px; display: flex; align-items: center; justify-content: center; }
-    .logo-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .title-box h1 { font-size: 18pt; font-weight: 800; letter-spacing: -0.02em; }
-    .title-box p { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.7); font-weight: 600; }
-
-    .header-right { text-align: right; }
-    .header-right strong { font-size: 12pt; display: block; }
-    .header-right span { font-size: 8.5pt; opacity: 0.7; }
-
-    /* Info Bar */
-    .info-bar {
-      padding: 24px 40px;
-      background: #f1f5f9;
+    /* ── Cabeçalho principal ── */
+    .rdo-header { border: 2px solid #1e3a5f; border-bottom: none; }
+    .rdo-header-top {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 20px;
-      border-bottom: 1px solid #e2e8f0;
+      grid-template-columns: 120px 1fr 120px;
+      border-bottom: 2px solid #1e3a5f;
     }
-    .info-item label { font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1em; }
-    .info-item div { font-size: 9.5pt; font-weight: 600; color: #1e293b; margin-top: 3px; }
+    .hdr-logo { padding: 10px; display: flex; align-items: center; justify-content: center; border-right: 1.5px solid #1e3a5f; min-height: 80px; }
+    .hdr-logo img { max-width: 100px; max-height: 60px; object-fit: contain; }
+    .hdr-logo-placeholder { font-size: 26pt; }
+    .hdr-title { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; text-align: center; }
+    .hdr-title h1 { font-size: 14pt; font-weight: 800; color: #1e3a5f; letter-spacing: 0.01em; }
+    .hdr-title p { font-size: 8pt; color: #475569; margin-top: 3px; }
+    .hdr-num { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; border-left: 1.5px solid #1e3a5f; text-align: center; }
+    .hdr-num label { font-size: 7pt; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.08em; }
+    .hdr-num strong { font-size: 16pt; font-weight: 800; color: #1e3a5f; display: block; margin-top: 2px; }
 
-    /* Summary Boxes */
-    .clima-summary {
-      margin: 32px 40px;
-      background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-      border-radius: 16px;
-      padding: 24px;
+    /* ── Grid de dados gerais ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1.5px solid #1e3a5f;
+    }
+    .info-grid-3 { grid-template-columns: 2fr 1fr 1fr; }
+    .info-cell {
+      padding: 6px 10px;
+      border-right: 1px solid #cbd5e1;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .info-cell:last-child { border-right: none; }
+    .info-cell label { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.07em; display: block; }
+    .info-cell span { font-size: 9pt; font-weight: 600; color: #1e293b; display: block; margin-top: 2px; }
+
+    /* ── Seções ── */
+    .section { border: 1.5px solid #1e3a5f; border-top: none; }
+    .section-title {
+      background: #1e3a5f;
       color: white;
+      padding: 6px 12px;
+      font-size: 8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+      gap: 8px;
     }
-    .clima-left { display: flex; align-items: center; gap: 16px; }
-    .clima-icon { font-size: 28pt; }
-    .clima-text h2 { font-size: 16pt; font-weight: 700; }
-    .clima-text p { opacity: 0.8; font-size: 9pt; }
+    .section-title .num { background: rgba(255,255,255,0.2); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 8pt; flex-shrink: 0; }
 
-    .stats-grid { display: flex; gap: 12px; }
-    .stat-pill { background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 12px; backdrop-filter: blur(4px); text-align: center; }
-    .stat-val { font-size: 13pt; font-weight: 800; display: block; }
-    .stat-lab { font-size: 7pt; text-transform: uppercase; opacity: 0.7; font-weight: 700; }
-
-    /* Content Area */
-    .main-content { padding: 0 40px 40px; }
-
-    .section { margin-bottom: 40px; break-inside: avoid; }
-    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; color: #1e1b4b; position: relative; }
-    .section-header h2 { font-size: 11pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
-    .section-header:after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
-
-    /* Tables */
-    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }
-    th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 7.5pt; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-    td { padding: 12px 16px; font-size: 9pt; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    /* ── Tabelas ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f1f5f9; }
+    th { padding: 7px 10px; font-size: 7pt; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.06em; border-bottom: 1.5px solid #cbd5e1; text-align: left; }
+    td { padding: 7px 10px; font-size: 8.5pt; color: #334155; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    .row-highlight { font-weight: 700; color: #1e293b; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .td-center { text-align: center; }
+    .td-bold { font-weight: 700; color: #1e293b; }
 
-    /* Activities */
-    .atv-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-    .atv-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .atv-name { font-weight: 700; color: #1e293b; font-size: 10pt; flex: 1; }
-    .atv-tag { font-size: 7pt; font-weight: 800; background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
-    .atv-prog { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin: 10px 0; }
-    .atv-fill { height: 100%; background: #4f46e5; border-radius: 3px; }
-    .atv-footer { display: flex; justify-content: space-between; font-size: 8.5pt; color: #64748b; }
-    .atv-pct { font-weight: 800; color: #4f46e5; }
+    /* ── Condição do tempo checkboxes ── */
+    .tempo-grid { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 14px; align-items: center; }
+    .tempo-opt { display: flex; align-items: center; gap: 6px; font-size: 8.5pt; color: #334155; }
+    .tempo-icon { font-size: 13pt; }
 
-    /* Photos */
-    .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .photo-cell { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; page-break-inside: avoid; }
-    .photo-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; border-bottom: 1px solid #e2e8f0; }
-    .photo-cap { padding: 10px; font-size: 8pt; color: #475569; text-align: center; font-style: italic; background: #f8fafc; }
+    /* ── Progress bar ── */
+    .prog-bar { background: #e2e8f0; border-radius: 2px; height: 6px; width: 80px; display: inline-block; overflow: hidden; }
+    .prog-fill { height: 100%; background: #1e3a5f; border-radius: 2px; }
 
-    /* Footer */
-    .footer {
-      border-top: 1px solid #e2e8f0;
-      padding: 20px 40px;
-      display: flex;
-      justify-content: space-between;
-      color: #94a3b8;
-      font-size: 7.5pt;
-      font-weight: 600;
+    /* Status equipamento */
+    .status-op { color: #16a34a; font-weight: 700; }
+    .status-par { color: #dc2626; font-weight: 700; }
+    .status-man { color: #d97706; font-weight: 700; }
+
+    /* ── Fotos ── */
+    .foto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .foto-cell { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .foto-cell:nth-child(even) { border-right: none; }
+    .foto-img-wrap { padding: 10px 10px 0; }
+    .foto-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid #e2e8f0; display: block; border-radius: 4px; }
+    .foto-meta { padding: 6px 10px 10px; }
+    .foto-meta table { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
+    .foto-meta th { font-size: 6pt; padding: 4px 6px; }
+    .foto-meta td { font-size: 7.5pt; padding: 4px 6px; border-bottom: none; }
+    .foto-caption { font-size: 8pt; color: #334155; padding: 4px 10px 8px; font-style: italic; }
+
+    /* ── Assinatura ── */
+    .assinatura-row { display: grid; grid-template-columns: 1fr 1fr; }
+    .assinatura-cell { padding: 14px 20px; border-right: 1px solid #cbd5e1; }
+    .assinatura-cell:last-child { border-right: none; }
+    .assinatura-label { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.07em; display: block; margin-bottom: 30px; }
+    .assinatura-line { border-top: 1.5px solid #1e3a5f; padding-top: 6px; }
+    .assinatura-name { font-size: 9pt; font-weight: 700; color: #1e293b; }
+    .assinatura-role { font-size: 7.5pt; color: #64748b; display: block; margin-top: 2px; }
+
+    /* ── Ocorrências ── */
+    .ocorrencias-box { padding: 12px 14px; min-height: 80px; font-size: 8.5pt; color: #334155; }
+
+    /* ── Totalizador ── */
+    .totalizador { background: #f8fafc; display: flex; gap: 0; }
+    .total-item { flex: 1; padding: 8px 14px; border-right: 1px solid #e2e8f0; }
+    .total-item:last-child { border-right: none; }
+    .total-item label { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.07em; display: block; }
+    .total-item strong { font-size: 12pt; font-weight: 800; color: #1e3a5f; display: block; margin-top: 3px; }
+
+    /* ── Rodapé ── */
+    .rdo-footer { border-top: 1px solid #cbd5e1; padding: 8px 14px; display: flex; justify-content: space-between; font-size: 7pt; color: #94a3b8; }
+
+    /* ── Botão imprimir ── */
+    .print-btn {
+      position: fixed; bottom: 28px; right: 28px;
+      background: #1e3a5f; color: white; border: none;
+      padding: 13px 26px; border-radius: 8px;
+      font-weight: 700; cursor: pointer; font-size: 13px;
+      box-shadow: 0 4px 20px rgba(30,58,95,0.4); z-index: 1000;
     }
-    .footer strong { color: #64748b; }
-
-    /* Custom Print Button */
-    .print-button {
-      position: fixed; bottom: 30px; right: 30px;
-      background: #4f46e5; color: white; border: none;
-      padding: 14px 28px; border-radius: 99px;
-      font-weight: 700; cursor: pointer;
-      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
-      z-index: 100; font-size: 14px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .print-button:hover { transform: scale(1.05); transition: 0.2s; background: #4338ca; }
+    .print-btn:hover { background: #2d4f82; }
   </style>
 </head>
 <body>
 
-  <button class="print-button no-print" onclick="window.print()">⬇ Baixar Documento Oficial</button>
+  <button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar PDF</button>
 
-  <div class="container">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-left">
-        <div class="logo-box">
-          ${data.companyLogo ? `<img src="${data.companyLogo}" class="logo-img" />` : '🏗️'}
-        </div>
-        <div class="title-box">
-          <p>Relatório Institucional</p>
-          <h1>Diário de Obra (RDO)</h1>
-        </div>
-      </div>
-      <div class="header-right">
-        <strong>${data.companyName || 'RelatorioFlow'}</strong>
-        <span>${data.responsavelNome}</span>
-      </div>
-    </header>
+  <div class="page">
 
-    <!-- Info Bar -->
-    <div class="info-bar">
-      <div class="info-item">
-        <label>Empreendimento / Obra</label>
-        <div>${data.projectName}</div>
+    <!-- ═══════════════════ CABEÇALHO PRINCIPAL ═══════════════════ -->
+    <div class="rdo-header">
+      <div class="rdo-header-top">
+        <div class="hdr-logo">
+          ${data.companyLogo
+            ? `<img src="${data.companyLogo}" />`
+            : `<div class="hdr-logo-placeholder">🏗</div>`}
+        </div>
+        <div class="hdr-title">
+          <h1>RELATÓRIO DIÁRIO DE OBRA</h1>
+          <p>RDO — Conforme NBR 12.722 e Resolução CONFEA 1.094/2019</p>
+        </div>
+        <div class="hdr-num">
+          <label>RDO Nº</label>
+          <strong>${rdoNum}</strong>
+        </div>
       </div>
-      <div class="info-item">
-        <label>Data de Registro</label>
-        <div>${dateStr}</div>
-      </div>
-      <div class="info-item" style="text-align: right;">
-        <label>ART / RRT</label>
-        <div>${data.artRrt || 'Não informado'}</div>
-      </div>
-    </div>
 
-    <!-- Clima & Pessoas -->
-    <div class="clima-summary">
-      <div class="clima-left">
-        <div class="clima-icon">${
-          data.condicaoTempo.includes('Ensol') ? '☀️'
-          : data.condicaoTempo.includes('Nublado') ? '⛅'
-          : data.condicaoTempo.includes('Chuv') ? '🌧️'
-          : data.condicaoTempo.includes('Temp') ? '⛈️'
-          : '🌤️'
-        }</div>
-        <div class="clima-text">
-          <h2>${data.condicaoTempo}</h2>
-          <p>${data.temperatura ? `Temperatura média: ${data.temperatura}` : 'Clima apurado no local'}</p>
+      <!-- Dados da obra -->
+      <div class="info-grid info-grid-3">
+        <div class="info-cell">
+          <label>Empreendimento / Obra</label>
+          <span>${data.projectName}</span>
+        </div>
+        <div class="info-cell">
+          <label>Data do Registro</label>
+          <span>${dateStr}</span>
+        </div>
+        <div class="info-cell">
+          <label>ART / RRT Nº</label>
+          <span>${data.artRrt || 'Não informado'}</span>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-pill">
-          <span class="stat-val">${totalPessoas}</span>
-          <span class="stat-lab">Profissionais</span>
+      <div class="info-grid">
+        <div class="info-cell">
+          <label>Endereço / Local da Obra</label>
+          <span>${data.projectAddress || 'Não informado'}</span>
         </div>
-        <div class="stat-pill">
-          <span class="stat-val">${totalHorasDia}h</span>
-          <span class="stat-lab">Produtividade</span>
+        <div class="info-cell">
+          <label>Contratante / Cliente</label>
+          <span>${data.clientName || 'Não informado'}</span>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-cell">
+          <label>Responsável Técnico</label>
+          <span>${data.responsavelNome}</span>
+        </div>
+        <div class="info-cell">
+          <label>CREA / CAU / CFT</label>
+          <span>${data.creaCau || '—'}</span>
         </div>
       </div>
     </div>
 
-    <!-- Main -->
-    <main class="main-content">
-      
-      <!-- Equipe -->
-      ${data.equipe.length > 0 ? `
-      <section class="section">
-        <div class="section-header"><h2>1. Efetivo do Dia</h2></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Colaborador / Equipe</th>
-              <th>Função / Qualificação</th>
-              <th style="text-align: center; width: 60px;">Horas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.equipe.map(e => `
-              <tr>
-                <td class="row-highlight">${e.nome}</td>
-                <td>${e.funcao}</td>
-                <td style="text-align: center">${e.horas}h</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </section>
-      ` : ''}
-
-      <!-- Atividades -->
-      ${data.atividades.length > 0 ? `
-      <section class="section">
-        <div class="section-header"><h2>2. Serviços Executados</h2></div>
-        ${data.atividades.map(a => `
-          <div class="atv-card">
-            <div class="atv-top">
-              <div class="atv-name">${a.descricao}</div>
-              <div class="atv-tag">${a.disciplina}</div>
-            </div>
-            <div class="atv-prog"><div class="atv-fill" style="width: ${a.percentual_concluido}%"></div></div>
-            <div class="atv-footer">
-              <span>${a.observacao || 'Nenhuma observação técnica.'}</span>
-              <span class="atv-pct">${a.percentual_concluido}% concluído</span>
-            </div>
+    <!-- ═══════════════════ 1. CONDIÇÕES CLIMÁTICAS ═══════════════════ -->
+    <div class="section">
+      <div class="section-title">
+        ${S()} Condições Climáticas e de Trabalho
+      </div>
+      <div class="tempo-grid">
+        ${TEMPO_OPCOES.map(op => `
+          <div class="tempo-opt">
+            ${checkbox(data.condicaoTempo === op || data.condicaoTempo.includes(op.split(' ')[0]))}
+            <span class="tempo-icon">${tempoIcon(op)}</span>
+            <span>${op}</span>
           </div>
         `).join('')}
-      </section>
-      ` : ''}
+        ${data.temperatura ? `
+        <div class="tempo-opt" style="margin-left:auto; font-weight:700; color:#1e3a5f;">
+          🌡 Temperatura: ${data.temperatura}
+        </div>` : ''}
+      </div>
+      <div style="border-top:1px solid #e2e8f0; padding: 6px 14px; background:#f8fafc;">
+        <span style="font-size:8pt; color:#475569;">Condição de Trabalho: </span>
+        <span style="font-size:8pt; font-weight:700; color:${data.condicaoTempo.includes('Chuva Forte') || data.condicaoTempo.includes('Temp') ? '#dc2626' : '#16a34a'}">
+          ${data.condicaoTempo.includes('Chuva Forte') || data.condicaoTempo.includes('Temp') ? '✗ Suspensão parcial ou total das atividades' : '✓ Condições favoráveis à execução dos serviços'}
+        </span>
+      </div>
+    </div>
 
-      <!-- Equipamentos -->
-      ${data.equipamentos.length > 0 ? `
-      <section class="section">
-        <div class="section-header"><h2>3. Equipamentos e Máquinas</h2></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Equipamento</th>
-              <th style="width: 50px; text-align: center">Qtd</th>
-              <th style="width: 140px">Situação Operacional</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.equipamentos.map(e => `
+    <!-- ═══════════════════ 2. EFETIVO — MÃO DE OBRA ═══════════════════ -->
+    ${data.equipe.length > 0 ? `
+    <div class="section">
+      <div class="section-title">
+        ${S()} Efetivo em Campo — Mão de Obra
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Colaborador / Equipe</th>
+            <th>Função / Especialidade</th>
+            <th class="td-center" style="width:80px;">Horas</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.equipe.map((e, i) => `
+          <tr>
+            <td class="td-center" style="color:#94a3b8; font-size:8pt;">${String(i + 1).padStart(2, '0')}</td>
+            <td class="td-bold">${e.nome || '—'}</td>
+            <td>${e.funcao || '—'}</td>
+            <td class="td-center td-bold">${e.horas}h</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="totalizador">
+        <div class="total-item"><label>Total de Profissionais</label><strong>${data.equipe.length}</strong></div>
+        <div class="total-item"><label>Total de Horas-Homem</label><strong>${totalHoras}h</strong></div>
+        <div class="total-item"><label>Média de Horas / Pessoa</label><strong>${data.equipe.length > 0 ? (totalHoras / data.equipe.length).toFixed(1) : '0'}h</strong></div>
+      </div>
+    </div>` : ''}
+
+    <!-- ═══════════════════ 3. SERVIÇOS EXECUTADOS ═══════════════════ -->
+    ${data.atividades.length > 0 ? `
+    <div class="section">
+      <div class="section-title">
+        ${S()} Serviços Executados no Dia
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Descrição do Serviço</th>
+            <th style="width:100px;">Disciplina</th>
+            <th style="width:110px;" class="td-center">% Concluído</th>
+            <th>Observações Técnicas</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.atividades.map((a, i) => `
+          <tr>
+            <td class="td-center" style="color:#94a3b8; font-size:8pt;">${String(i + 1).padStart(2, '0')}</td>
+            <td class="td-bold">${a.descricao}</td>
+            <td style="font-size:8pt;">${a.disciplina}</td>
+            <td class="td-center">
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                <div class="prog-bar"><div class="prog-fill" style="width:${a.percentual_concluido}%"></div></div>
+                <span style="font-weight:700;color:#1e3a5f;font-size:8.5pt;">${a.percentual_concluido}%</span>
+              </div>
+            </td>
+            <td style="font-size:8.5pt;color:#64748b;">${a.observacao || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    <!-- ═══════════════════ 4. EQUIPAMENTOS ═══════════════════ -->
+    ${data.equipamentos.length > 0 ? `
+    <div class="section">
+      <div class="section-title">
+        ${S()} Equipamentos e Máquinas
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Equipamento / Máquina</th>
+            <th style="width:70px;" class="td-center">Qtd.</th>
+            <th style="width:160px;">Situação Operacional</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.equipamentos.map((e, i) => {
+            const cls = e.status === 'operando' ? 'status-op' : e.status === 'parado' ? 'status-par' : 'status-man'
+            const label = e.status === 'operando' ? '● Em Operação' : e.status === 'parado' ? '● Parado' : '● Em Manutenção'
+            return `
+          <tr>
+            <td class="td-center" style="color:#94a3b8; font-size:8pt;">${String(i + 1).padStart(2, '0')}</td>
+            <td class="td-bold">${e.nome}</td>
+            <td class="td-center">${e.quantidade}</td>
+            <td class="${cls}">${label}</td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    <!-- ═══════════════════ 5. OCORRÊNCIAS / OBSERVAÇÕES ═══════════════════ -->
+    <div class="section">
+      <div class="section-title">
+        ${S()} Ocorrências, Interferências e Observações Gerais
+      </div>
+      <div class="ocorrencias-box">
+        ${data.ocorrencias ? mdToHtml(data.ocorrencias) : '<span style="color:#94a3b8;font-style:italic;">Sem ocorrências registradas no dia.</span>'}
+      </div>
+    </div>
+
+    <!-- ═══════════════════ 6. REGISTRO FOTOGRÁFICO ═══════════════════ -->
+    ${data.fotos.length > 0 ? `
+    <div class="section page-break">
+      <div class="section-title">
+        ${S()} Registro Fotográfico (${data.fotos.length} foto${data.fotos.length !== 1 ? 's' : ''})
+      </div>
+      <div class="foto-grid">
+        ${data.fotos.map((f, i) => `
+        <div class="foto-cell">
+          <div class="foto-img-wrap">
+            <img src="${f.url}" class="foto-img" />
+          </div>
+          <div class="foto-caption">Foto ${String(i + 1).padStart(2, '0')} — ${f.caption || 'Evidência fotográfica de campo.'}</div>
+          <div class="foto-meta">
+            <table>
               <tr>
-                <td class="row-highlight">${e.nome}</td>
-                <td style="text-align: center">${e.quantidade}</td>
-                <td>${statusLabel(e.status)}</td>
+                <th>Data</th><th>Responsável</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </section>
-      ` : ''}
+              <tr>
+                <td>${dateShort}</td><td>${data.responsavelNome}</td>
+              </tr>
+            </table>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
 
-      <!-- Ocorrências -->
-      ${data.ocorrencias ? `
-      <section class="section">
-        <div class="section-header"><h2>4. Ocorrências Gerais</h2></div>
-        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 12px; font-size: 9.5pt; color: #92400e; white-space: pre-wrap;">${data.ocorrencias}</div>
-      </section>
-      ` : ''}
-
-      <!-- Fotos -->
-      ${data.fotos.length > 0 ? `
-      <section class="section">
-        <div class="section-header"><h2>5. Registro Fotográfico</h2></div>
-        <div class="photo-grid">
-          ${data.fotos.map(f => `
-            <div class="photo-cell">
-              <img src="${f.url}" class="photo-img" />
-              <div class="photo-cap">${f.caption || 'Evidência fotográfica capturada em campo.'}</div>
-            </div>
-          `).join('')}
+    <!-- ═══════════════════ 7. ASSINATURAS ═══════════════════ -->
+    <div class="section">
+      <div class="section-title">
+        ${S()} Assinaturas e Responsabilidades
+      </div>
+      <div class="assinatura-row">
+        <div class="assinatura-cell">
+          <span class="assinatura-label">Responsável Técnico pela Obra</span>
+          <div class="assinatura-line">
+            <div class="assinatura-name">${data.responsavelNome}</div>
+            <span class="assinatura-role">CREA/CAU/CFT: ${data.creaCau || '—'} · ${data.companyName || 'RelatorioFlow'}</span>
+          </div>
         </div>
-      </section>
-      ` : ''}
-
-      <!-- Assinatura -->
-      <section style="margin-top: 80px; text-align: center; break-inside: avoid;">
-        <div style="width: 300px; margin: 0 auto; border-top: 2px solid #1e1b4b; padding-top: 10px;">
-          <strong style="display: block; font-size: 11pt;">${data.responsavelNome}</strong>
-          <span style="display: block; font-size: 8pt; color: #64748b; margin-top: 4px;">RESPONSÁVEL TÉCNICO</span>
-          ${data.creaCau ? `<span style="font-size: 8pt; color: #94a3b8;">Registre Profissional: ${data.creaCau}</span>` : ''}
+        <div class="assinatura-cell">
+          <span class="assinatura-label">Fiscalização / Contratante</span>
+          <div class="assinatura-line">
+            <div class="assinatura-name">&nbsp;</div>
+            <span class="assinatura-role">${data.clientName || '—'}</span>
+          </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-    </main>
+    <!-- Rodapé -->
+    <div class="rdo-footer">
+      <span><strong>${data.projectName}</strong> — RDO Nº ${rdoNum} — ${dateShort}</span>
+      <span>Gerado por RelatorioFlow · Conforme ABNT NBR 12.722</span>
+    </div>
 
-    <footer class="footer">
-      <div><strong>${data.projectName}</strong> — Doc ID: RDO-${data.reportDate.replace(/-/g, '')}</div>
-      <div>Gerado de forma segura via RelatorioFlow · Página oficial</div>
-    </footer>
   </div>
 
 </body>
@@ -370,8 +452,6 @@ export function openDiarioObraPDF(data: DiarioObraPDFData) {
   const url = URL.createObjectURL(blob)
   const win = window.open(url, '_blank')
   if (win) {
-    win.onload = () => {
-      setTimeout(() => URL.revokeObjectURL(url), 10000)
-    }
+    win.onload = () => setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 }

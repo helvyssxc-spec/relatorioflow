@@ -203,23 +203,39 @@ Linguagem clara, técnica e estruturada para fácil leitura executiva.`,
   const estrutura = estruturas[p.reportType] ?? "";
 
   if (p.action === "improve") {
-    return `Você é um revisor técnico sênior brasileiro especializado em documentação técnica profissional.
-Melhore a clareza, coesão, precisão e linguagem técnica do relatório abaixo.
-Mantenha todas as informações originais. Corrija estrutura e formatação se necessário.
-Retorne apenas o texto melhorado, sem comentários adicionais.`;
+    const fieldLabel = p.fieldName ? `campo "${p.fieldName}"` : 'texto';
+    return `Você é um engenheiro-redator técnico sênior brasileiro.
+Sua tarefa: melhorar APENAS o ${fieldLabel} abaixo, mantendo todas as informações originais.
+
+REGRAS DE FORMATAÇÃO (essenciais):
+- Use ## para sub-seções quando o campo tiver mais de um tópico
+- Use **negrito** para termos técnicos ou destaques importantes
+- Use listas com - quando houver enumeração de itens
+- Linguagem técnica formal em 3ª pessoa do singular
+- NÃO use primeira pessoa (nunca "realizamos", "fizemos")
+- NÃO adicione cabeçalho, rodapé nem contexto além do texto
+- NÃO invente dados que não estão no texto original
+- Corrija erros de ortografia e gramática
+- Retorne APENAS o texto melhorado, nada mais`;
   }
 
-  return `Você é um engenheiro técnico sênior especializado em elaborar ${typeLabel}s profissionais no Brasil.
+  return `Você é um engenheiro-redator técnico sênior especializado em elaborar ${typeLabel}s profissionais no Brasil.
 
-Sua tarefa: transformar as notas brutas fornecidas em um ${typeLabel} técnico completo, profissional e pronto para uso.
+Sua tarefa: transformar as notas brutas fornecidas em APENAS o corpo do ${typeLabel}, já formatado para o campo solicitado.
 
-REGRAS ABSOLUTAS:
-- Português formal, linguagem técnica objetiva (3ª pessoa do singular)
-- NÃO invente dados não mencionados nas notas ou no contexto
-- NÃO inclua cabeçalho, rodapé, logo ou metadados — isso é gerado pelo sistema
-- Use Markdown apenas para estrutura: ## para seções, **negrito**, - para listas
-- Retorne APENAS o corpo do documento, sem introduções ou despedidas
-- Mínimo de 400 palavras para relatórios completos
+REGRAS ABSOLUTAS DE CONTEÚDO:
+- Português formal, linguagem técnica objetiva (3ª pessoa do singular — nunca "realizamos", "fizemos")
+- NÃO invente dados, medidas ou valores não mencionados nas notas
+- NÃO inclua título do documento, nome da empresa, data ou metadados
+- Foque exclusivamente no conteúdo técnico do campo solicitado
+
+REGRAS DE FORMATAÇÃO MARKDOWN (obrigatório):
+- Use ## para iniciar cada sub-seção ou tópico principal
+- Use **negrito** para termos técnicos importantes e conclusões-chave
+- Use listas com - para enumeração de itens, anomalias ou ações
+- Use listas numeradas (1. 2. 3.) para processos sequenciais
+- Separe seções com linha em branco
+- Mínimo de 250 palavras; máximo de 600 palavras
 ${estrutura}
 ${contextBlock}`;
 }

@@ -31,42 +31,38 @@ export function AITextAssistant({ currentText, context, onSelect, onApply, repor
     }
 
     setLoading(true)
+    setGeneratedText('')
     try {
-      const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: {
-          notes: text,
-          action: 'improve',
-          reportType: reportType,
-          fieldName: fieldName
-        }
-      })
-
-      if (error) throw error
-
-      // Note: The edge function returns a stream or a body. 
-      // Current supabase-js invoke might not support full streaming easily without manual fetch
-      // But for a start, let's assume it returns the text or we handle the text response
-      
-      // If the function returns a stream, we'd use fetch directly. 
-      // Let's check how the function is implemented. It uses 'serve' and returns a 'Response(readable)'.
-      
       const { data: { session } } = await supabase.auth.getSession()
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({
-          notes: text,
-          action: 'improve',
-          reportType: reportType,
-          fieldName: fieldName
-        })
-      })
 
-      if (!response.ok) throw new Error('Falha na resposta da IA')
+      if (!session?.access_token) {
+        toast.error('Sessão expirada. Faça login novamente.')
+        return
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            notes: text,
+            action: 'improve',
+            reportType,
+            fieldName,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const body = await response.text()
+        console.error('Edge Function error:', response.status, body)
+        throw new Error(`Erro ${response.status}: ${body}`)
+      }
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
@@ -76,20 +72,24 @@ export function AITextAssistant({ currentText, context, onSelect, onApply, repor
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          
-          const chunk = decoder.decode(value)
-          // Look for the usage token at the end and strip it
+          const chunk = decoder.decode(value, { stream: true })
+          // Strip trailing usage marker
           const cleanChunk = chunk.split('\n__RF_USAGE__:')[0]
           fullText += cleanChunk
           setGeneratedText(fullText)
         }
       }
-      
-      handleResult(fullText)
+
+      if (!fullText.trim()) throw new Error('Resposta vazia da IA')
+
+      handleResult(fullText.trim())
       toast.success('Texto aprimorado com sucesso!')
-    } catch (err) {
-      console.error(err)
-      toast.error('Erro ao conectar com a IA. Verifique suas chaves de API.')
+    } catch (err: any) {
+      console.error('AITextAssistant error:', err)
+      toast.error(err?.message?.includes('401')
+        ? 'Sem autorização para usar a IA. Faça login novamente.'
+        : 'Erro ao conectar com a IA. Tente novamente em alguns segundos.'
+      )
     } finally {
       setLoading(false)
     }

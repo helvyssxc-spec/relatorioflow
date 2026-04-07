@@ -1,15 +1,8 @@
+import { mdToHtml, mdCss } from './markdownToHtml'
+
 interface FotoItem { url: string; caption?: string }
-
-interface SecaoTecnica {
-  titulo: string
-  conteudo: string
-  fotos: FotoItem[]
-}
-
-interface Recomendacao {
-  texto: string
-  prioridade: 'alta' | 'media' | 'baixa'
-}
+interface SecaoTecnica { titulo: string; conteudo: string; fotos: FotoItem[] }
+interface Recomendacao { texto: string; prioridade: 'alta' | 'media' | 'baixa' }
 
 interface RelatorioTecnicoPDFData {
   projectName: string
@@ -30,233 +23,468 @@ interface RelatorioTecnicoPDFData {
   fotosGerais: FotoItem[]
 }
 
+const PRI_CONFIG = {
+  alta:  { bg: '#fef2f2', border: '#fca5a5', badge: '#dc2626', label: 'ALTA'  },
+  media: { bg: '#fffbeb', border: '#fcd34d', badge: '#d97706', label: 'MÉDIA' },
+  baixa: { bg: '#f0fdf4', border: '#86efac', badge: '#16a34a', label: 'BAIXA' },
+}
+
 export function generateRelatorioTecnicoHTML(data: RelatorioTecnicoPDFData): string {
-  const dateStr = new Date(data.reportDate + 'T12:00:00').toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-  })
-  const dateShort = new Date(data.reportDate + 'T12:00:00').toLocaleDateString('pt-BR')
+  const dateObj = new Date(data.reportDate + 'T12:00:00')
+  const dateStr  = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+  const dateShort = dateObj.toLocaleDateString('pt-BR')
+
+  // Contador dinâmico de seções
+  let sec = 0
+  const S = () => `<span class="sec-num">${++sec}</span>`
+
+  const totalFotos = data.fotosGerais.length + data.diagnostico.reduce((a, d) => a + d.fotos.length, 0)
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Relatório Técnico ${data.numeroRelatorio} — ${data.projectName}</title>
+  <title>RT ${data.numeroRelatorio} — ${data.projectName}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+    ${mdCss}
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      font-size: 10pt;
-      color: #0f172a;
-      background: #fafafa;
-      line-height: 1.6;
-    }
-
-    @page { size: A4; margin: 0; }
+    body { font-family: 'Inter', sans-serif; font-size: 9.5pt; color: #1e293b; background: #f1f5f9; line-height: 1.6; }
+    @page { size: A4; margin: 2cm 1.8cm; }
     @media print {
       body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
-      .page { margin: 2.5cm 1.5cm; min-height: 29.7cm; break-after: page; position: relative; }
+      .page-break { page-break-before: always; }
+      .avoid-break { break-inside: avoid; }
     }
+    .page { max-width: 210mm; margin: 0 auto; background: white; }
 
-    .page { background: white; width: 210mm; min-height: 297mm; padding: 2.5cm 1.5cm; margin: 0 auto; position: relative; }
-
-    /* CAPA */
-    .capa {
-      background: #1e1b4b;
-      color: white;
-      padding: 60px;
+    /* ═══ CAPA ═══ */
+    .cover {
+      height: 297mm;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      height: 297mm;
-      width: 210mm;
-      margin: 0 auto;
       page-break-after: always;
-      position: relative;
-      overflow: hidden;
+      background: white;
     }
-    .capa::before {
-      content: ''; position: absolute; top: -10%; right: -10%; width: 40%; height: 40%;
-      background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 75%);
+    .cover-top {
+      background: #0f2746;
+      color: white;
+      padding: 40px 50px 50px;
+      flex-shrink: 0;
+    }
+    .cover-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .cover-logo { width: 72px; height: 72px; background: white; border-radius: 10px; padding: 6px; display: flex; align-items: center; justify-content: center; }
+    .cover-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .cover-logo-text { font-size: 24pt; }
+    .cover-company { text-align: right; }
+    .cover-company strong { font-size: 13pt; font-weight: 800; display: block; }
+    .cover-company span { font-size: 8.5pt; opacity: 0.6; margin-top: 4px; display: block; }
+
+    .cover-badge {
+      display: inline-block;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 14px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      margin-top: 40px;
+      margin-bottom: 16px;
+    }
+    .cover-title { font-size: 30pt; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 10px; }
+    .cover-subtitle { font-size: 13pt; opacity: 0.55; font-weight: 400; }
+
+    .cover-body { flex: 1; padding: 40px 50px; display: flex; flex-direction: column; justify-content: space-between; }
+    .cover-id-table { width: 100%; border-collapse: collapse; border: 1.5px solid #e2e8f0; }
+    .cover-id-table th {
+      background: #f8fafc;
+      font-size: 6.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+      width: 35%;
+    }
+    .cover-id-table td {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #1e293b;
+      padding: 9px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .cover-id-table tr:last-child th,
+    .cover-id-table tr:last-child td { border-bottom: none; }
+
+    .cover-footer {
+      font-size: 8pt;
+      color: #94a3b8;
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* ═══ CABEÇALHO INTERNO (páginas de conteúdo) ═══ */
+    .doc-header {
+      border: 1.5px solid #0f2746;
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    .doc-header-top {
+      display: grid;
+      grid-template-columns: 80px 1fr 180px;
+      border-bottom: 1.5px solid #0f2746;
+    }
+    .dhdr-logo { padding: 8px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #0f2746; }
+    .dhdr-logo img { max-width: 64px; max-height: 40px; object-fit: contain; }
+    .dhdr-title { padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; }
+    .dhdr-title strong { font-size: 11pt; font-weight: 800; color: #0f2746; display: block; }
+    .dhdr-title span { font-size: 8pt; color: #64748b; margin-top: 2px; display: block; }
+    .dhdr-num { border-left: 1px solid #0f2746; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; background: #0f2746; color: white; }
+    .dhdr-num label { font-size: 6pt; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; font-weight: 700; }
+    .dhdr-num strong { font-size: 12pt; font-weight: 800; display: block; margin-top: 2px; }
+
+    .doc-meta { display: grid; grid-template-columns: 2fr 1fr 1fr; border-bottom: 1px solid #cbd5e1; }
+    .doc-meta-2 { grid-template-columns: 1fr 1fr; }
+    .meta-cell { padding: 6px 12px; border-right: 1px solid #e2e8f0; }
+    .meta-cell:last-child { border-right: none; }
+    .meta-cell label { font-size: 6pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; display: block; }
+    .meta-cell span  { font-size: 9pt; font-weight: 600; color: #1e293b; display: block; margin-top: 2px; }
+
+    /* ═══ SEÇÕES ═══ */
+    .rt-section { border: 1.5px solid #0f2746; border-top: none; avoid-break: inside; }
+    .rt-section-title {
+      background: #0f2746;
+      color: white;
+      padding: 7px 14px;
+      font-size: 8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sec-num {
+      background: rgba(255,255,255,0.15);
       border-radius: 50%;
+      width: 20px; height: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8pt; font-weight: 800; flex-shrink: 0;
     }
-    .capa-header { display: flex; justify-content: space-between; align-items: flex-start;  border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 30px; }
-    .capa-logo { width: 80px; height: 80px; background: white; border-radius: 12px; padding: 8px; display: flex; align-items: center; justify-content: center; }
-    .capa-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .capa-comp { text-align: right; }
-    .capa-comp strong { font-size: 16pt; display: block; font-weight: 800; }
-    .capa-comp span { font-size: 9.5pt; opacity: 0.6; display: block; margin-top: 4px; }
 
-    .capa-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-    .capa-tag { display: inline-block; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); padding: 5px 15px; border-radius: 99px; font-size: 9pt; font-weight: 800; letter-spacing: 0.1em; color: #a5b4fc; margin-bottom: 30px; text-transform: uppercase; }
-    .capa-title { font-size: 38pt; font-weight: 800; line-height: 1.1; margin-bottom: 15px; letter-spacing: -0.01em; }
-    .capa-sub { font-size: 16pt; opacity: 0.6; margin-bottom: 60px; max-width: 80%; }
-    
-    .capa-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-    .m-item label { font-size: 7.5pt; text-transform: uppercase; opacity: 0.5; font-weight: 800; letter-spacing: 0.05em; display: block; }
-    .m-item div { font-size: 12pt; font-weight: 600; margin-top: 5px; }
+    /* ═══ CONCLUSÃO / RESUMO EXECUTIVO ═══ */
+    .conclusao-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border-left: 4px solid #0f2746;
+      padding: 18px 20px;
+      margin: 0;
+    }
+    .conclusao-label { font-size: 6.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #0f2746; display: block; margin-bottom: 8px; }
+    .conclusao-text { font-size: 9.5pt; color: #1e3a5f; line-height: 1.7; }
 
-    .capa-foot { padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; font-size: 9pt; color: rgba(255,255,255,0.4); weight: 600; }
+    /* ═══ TEXTO DE SEÇÃO ═══ */
+    .section-body { padding: 16px 20px; font-size: 9.5pt; line-height: 1.7; color: #334155; }
 
-    /* CONTENT PAGES */
-    .inner-header { position: absolute; top: 1cm; left: 1.5cm; right: 1.5cm; display: flex; justify-content: space-between; font-size: 8pt; color: #94a3b8; font-weight: 700; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
-    .inner-footer { position: absolute; bottom: 1cm; left: 1.5cm; right: 1.5cm; display: flex; justify-content: space-between; font-size: 8pt; color: #94a3b8; font-weight: 700; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+    /* ═══ DIAGNÓSTICO ═══ */
+    .diag-item { border-bottom: 1px solid #e2e8f0; }
+    .diag-item:last-child { border-bottom: none; }
+    .diag-sub-header {
+      background: #f8fafc;
+      padding: 7px 20px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #0f2746;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .diag-sub-num { color: #94a3b8; font-weight: 600; font-size: 8pt; }
+    .diag-content { padding: 14px 20px; }
+    .diag-fotos { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 0 20px 14px; }
+    .diag-foto-item { border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .diag-foto-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; border-bottom: 1px solid #e2e8f0; }
+    .diag-foto-cap { font-size: 7pt; color: #64748b; padding: 5px 7px; text-align: center; font-style: italic; background: #f8fafc; }
 
-    .section { margin-bottom: 40px; break-inside: avoid-page; }
-    .section-h { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .section-h h2 { font-size: 13pt; font-weight: 800; text-transform: uppercase; color: #1e1b4b; letter-spacing: 0.02em; }
-    .section-h:after { content: ''; flex: 1; height: 2px; background: #e0e7ff; }
+    /* ═══ RECOMENDAÇÕES ═══ */
+    .rec-table { width: 100%; border-collapse: collapse; }
+    .rec-table th { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; padding: 8px 14px; background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; text-align: left; }
+    .rec-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 9pt; color: #334155; vertical-align: top; }
+    .rec-table tr:last-child td { border-bottom: none; }
+    .rec-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 7pt; font-weight: 800; color: white; }
 
-    /* Resumo Box */
-    .resumo { background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%); border: 2px solid #7c3aed; border-radius: 16px; padding: 25px; margin-bottom: 40px; }
-    .res-tag { display: inline-block; background: #7c3aed; color: white; padding: 3px 12px; border-radius: 99px; font-size: 7.5pt; font-weight: 800; margin-bottom: 12px; }
-    .res-title { font-size: 15pt; font-weight: 800; color: #4c1d95; margin-bottom: 10px; }
-    .res-text { font-size: 10.5pt; color: #5b21b6; font-weight: 500; white-space: pre-wrap; }
+    /* ═══ FOTOS GERAIS ═══ */
+    .foto-grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
+    .foto-cell { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .foto-cell:nth-child(even) { border-right: none; }
+    .foto-img-wrap { padding: 12px 12px 0; }
+    .foto-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; border: 1px solid #e2e8f0; border-radius: 3px; }
+    .foto-caption { font-size: 8pt; color: #64748b; padding: 6px 12px 12px; text-align: center; font-style: italic; }
 
-    .text-box { background: white; border: 1px solid #f1f5f9; padding: 20px; border-radius: 12px; font-size: 10pt; color: #334155; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); white-space: pre-wrap; }
+    /* ═══ ASSINATURA ═══ */
+    .assinatura-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .assinatura-cell { padding: 16px 24px; border-right: 1px solid #e2e8f0; }
+    .assinatura-cell:last-child { border-right: none; }
+    .assinatura-label { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; display: block; margin-bottom: 28px; }
+    .assinatura-line { border-top: 1.5px solid #0f2746; padding-top: 8px; }
+    .assinatura-name { font-size: 9.5pt; font-weight: 700; color: #0f2746; }
+    .assinatura-role { font-size: 7.5pt; color: #64748b; display: block; margin-top: 3px; }
 
-    /* Diagnostics */
-    .diag-card { margin-bottom: 25px; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; break-inside: avoid-page; }
-    .diag-h { background: #1e1b4b; color: white; padding: 12px 20px; font-weight: 800; font-size: 10.5pt; }
-    .diag-b { padding: 20px; }
-    .diag-txt { font-size: 10pt; margin-bottom: 15px; color: #475569; }
-    .diag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .diag-p-box { border-radius: 10px; overflow: hidden; border: 1px solid #f1f5f9; }
-    .diag-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-bottom: 1px solid #f1f5f9; }
-    .diag-cap { padding: 6px; font-size: 7pt; color: #94a3b8; text-align: center; }
+    /* ═══ RODAPÉ ═══ */
+    .rt-footer { border-top: 1px solid #e2e8f0; padding: 8px 0; display: flex; justify-content: space-between; font-size: 7pt; color: #94a3b8; margin-top: 0; }
 
-    /* Recommendations */
-    .rec-item { display: flex; gap: 15px; padding: 15px; border-radius: 12px; margin-bottom: 12px; break-inside: avoid; border: 1px solid transparent; }
-    .rec-flag { flex-shrink: 0; width: 80px; text-align: center; font-size: 7.5pt; font-weight: 800; padding: 4px; border-radius: 6px; color: white; }
-    .rec-body { font-size: 10pt; font-weight: 500; color: #1e293b; }
-
-    /* Buttons */
+    /* ═══ BOTÃO ═══ */
     .print-btn {
-      position: fixed; bottom: 30px; right: 30px;
-      background: #7c3aed; color: white; border: none;
-      padding: 15px 30px; border-radius: 99px;
-      font-weight: 800; cursor: pointer; box-shadow: 0 10px 30px rgba(124,58,237,0.4);
-      z-index: 1000; font-size: 14px;
+      position: fixed; bottom: 28px; right: 28px;
+      background: #0f2746; color: white; border: none;
+      padding: 13px 26px; border-radius: 8px;
+      font-weight: 700; cursor: pointer; font-size: 13px;
+      box-shadow: 0 4px 20px rgba(15,39,70,0.4); z-index: 1000;
     }
+    .print-btn:hover { background: #1e3a5f; }
   </style>
 </head>
 <body>
+  <button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar PDF</button>
 
-  <button class="print-btn no-print" onclick="window.print()">⬇ Baixar Relatório Técnico Premium</button>
-
-  <!-- CAPA -->
-  <div class="capa">
-    <div class="capa-header">
-      <div class="capa-logo">
-        ${data.companyLogo ? `<img src="${data.companyLogo}" />` : '📂'}
-      </div>
-      <div class="capa-comp">
-        <strong>${data.companyName || 'RelatorioFlow'}</strong>
-        <span>${data.responsavelTecnico} · CREA/CAU ${data.creaCau || ''}</span>
-      </div>
-    </div>
-
-    <div class="capa-main">
-      <div class="capa-tag">Padrão ABNT NBR 10719 · Documento Técnico</div>
-      <div class="capa-title">${data.projectName}</div>
-      <p class="capa-sub">${data.projectAddress || 'Local não informado'}</p>
-
-      <div class="capa-meta">
-        <div class="m-item"><label>Data da Emissão</label><div>${dateStr}</div></div>
-        <div class="m-item"><label>N° do Registro</label><div>${data.numeroRelatorio}</div></div>
-        <div class="m-item"><label>Cliente</label><div>${data.clientName || '---'}</div></div>
-        <div class="m-item"><label>Documento de Responsabilidade</label><div>${data.artRrt || 'Não vinculada'}</div></div>
-      </div>
-    </div>
-
-    <div class="capa-foot">
-      <div>RelatorioFlow · Advanced Engineering Docs</div>
-      <div>Confidencial © ${new Date().getFullYear()}</div>
-    </div>
-  </div>
-
-  <!-- PAGE 2: Resumo e Escopo -->
   <div class="page">
-    <div class="inner-header"><div>${data.projectName}</div><div>Página 1</div></div>
-    
-    <div class="resumo">
-      <div class="res-tag">PARECER EXECUTIVO</div>
-      <h2 class="res-title">Conclusão Final</h2>
-      <div class="res-text">${data.conclusao}</div>
-    </div>
 
-    <section class="section">
-      <div class="section-h"><h2>1. Objetivo</h2></div>
-      <div class="text-box">${data.objetivo}</div>
-    </section>
-
-    <section class="section">
-      <div class="section-h"><h2>2. Metodologia</h2></div>
-      <div class="text-box">${data.metodologia}</div>
-    </section>
-
-    <div class="inner-footer"><div>Doc ID: ${data.numeroRelatorio}</div><div>${dateShort}</div></div>
-  </div>
-
-  <!-- PAGE 3+: Diagnóstico -->
-  <div class="page">
-    <div class="inner-header"><div>${data.projectName}</div><div>Página 2</div></div>
-    
-    <section class="section">
-      <div class="section-h"><h2>3. Diagnóstico e Análise Técnica</h2></div>
-      ${data.diagnostico.map((d, i) => `
-        <div class="diag-card">
-          <div class="diag-h">Seção 3.${i+1} · ${d.titulo}</div>
-          <div class="diag-b">
-            <div class="diag-txt">${d.conteudo}</div>
-            <div class="diag-grid">
-              ${d.fotos.map(f => `
-                <div class="diag-p-box">
-                  <img src="${f.url}" class="diag-img" />
-                  <div class="diag-cap">${f.caption || 'Registro de campo.'}</div>
-                </div>
-              `).join('')}
-            </div>
+    <!-- ══════════════════════════════════════
+         CAPA
+    ══════════════════════════════════════ -->
+    <div class="cover">
+      <div class="cover-top">
+        <div class="cover-top-row">
+          <div class="cover-logo">
+            ${data.companyLogo
+              ? `<img src="${data.companyLogo}" />`
+              : `<div class="cover-logo-text">📋</div>`}
+          </div>
+          <div class="cover-company">
+            <strong>${data.companyName || 'RelatorioFlow'}</strong>
+            <span>${data.responsavelTecnico}</span>
+            <span>${data.creaCau ? `CREA/CAU: ${data.creaCau}` : ''}</span>
           </div>
         </div>
-      `).join('')}
-    </section>
-
-    <div class="inner-footer"><div>Doc ID: ${data.numeroRelatorio}</div><div>${dateShort}</div></div>
-  </div>
-
-  <!-- PAGE FINAL: Recomendações e Assinatura -->
-  <div class="page" style="break-before: always;">
-    <div class="inner-header"><div>${data.projectName}</div><div>Página Final</div></div>
-
-    <section class="section">
-      <div class="section-h"><h2>4. Plano de Ação e Recomendações</h2></div>
-      ${data.recomendacoes.map(r => {
-        const bg = r.prioridade === 'alta' ? '#fee2e2' : r.prioridade === 'media' ? '#fef3c7' : '#f0fdf4';
-        const color = r.prioridade === 'alta' ? '#dc2626' : r.prioridade === 'media' ? '#d97706' : '#15803d';
-        return `
-          <div class="rec-item" style="background: ${bg}; border-color: ${color}20;">
-            <div class="rec-flag" style="background: ${color};">${r.prioridade.toUpperCase()}</div>
-            <div class="rec-body">${r.texto}</div>
-          </div>
-        `
-      }).join('')}
-    </section>
-
-    <section style="margin-top: 150px; text-align: center;">
-      <div style="width: 350px; margin: 0 auto; border-top: 3px solid #1e1b4b; padding-top: 15px;">
-        <strong style="font-size: 13pt; display: block;">${data.responsavelTecnico}</strong>
-        <span style="font-size: 9pt; color: #64748b; font-weight: 700; display: block; margin-top: 5px;">RESPONSÁVEL TÉCNICO</span>
-        <span style="font-size: 8.5pt; color: #94a3b8; display: block; margin-top: 2px;">CREA/CAU ${data.creaCau || '---'}</span>
+        <div class="cover-badge">Padrão ABNT NBR 10719 · Documento Técnico Oficial</div>
+        <div class="cover-title">${data.projectName}</div>
+        <div class="cover-subtitle">Relatório Técnico de Inspeção e Análise</div>
       </div>
-    </section>
 
-    <div class="inner-footer"><div>Gerado por RelatorioFlow</div><div>${dateShort}</div></div>
+      <div class="cover-body">
+        <table class="cover-id-table">
+          <tr>
+            <th>Nº do Relatório</th>
+            <td style="font-weight:800; font-size:12pt; color:#0f2746;">${data.numeroRelatorio}</td>
+          </tr>
+          <tr>
+            <th>Data de Emissão</th>
+            <td>${dateStr}</td>
+          </tr>
+          <tr>
+            <th>Empreendimento / Obra</th>
+            <td>${data.projectName}</td>
+          </tr>
+          <tr>
+            <th>Endereço / Local</th>
+            <td>${data.projectAddress || 'Não informado'}</td>
+          </tr>
+          <tr>
+            <th>Contratante / Cliente</th>
+            <td>${data.clientName || 'Não informado'}</td>
+          </tr>
+          <tr>
+            <th>Responsável Técnico</th>
+            <td>${data.responsavelTecnico}</td>
+          </tr>
+          <tr>
+            <th>CREA / CAU / CFT</th>
+            <td>${data.creaCau || '—'}</td>
+          </tr>
+          <tr>
+            <th>ART / RRT Nº</th>
+            <td>${data.artRrt || 'Não informado'}</td>
+          </tr>
+        </table>
+
+        <div class="cover-footer">
+          Gerado por RelatorioFlow · Documento sigiloso e de uso exclusivo do contratante · ${dateShort}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         CONTEÚDO — Cabeçalho Interno
+    ══════════════════════════════════════ -->
+    <div class="doc-header">
+      <div class="doc-header-top">
+        <div class="dhdr-logo">
+          ${data.companyLogo ? `<img src="${data.companyLogo}" />` : '📋'}
+        </div>
+        <div class="dhdr-title">
+          <strong>RELATÓRIO TÉCNICO</strong>
+          <span>${data.companyName || 'RelatorioFlow'} · Conforme ABNT NBR 10719</span>
+        </div>
+        <div class="dhdr-num">
+          <label>RT Nº</label>
+          <strong>${data.numeroRelatorio}</strong>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <div class="meta-cell">
+          <label>Empreendimento / Obra</label>
+          <span>${data.projectName}</span>
+        </div>
+        <div class="meta-cell">
+          <label>Data de Emissão</label>
+          <span>${dateShort}</span>
+        </div>
+        <div class="meta-cell">
+          <label>ART / RRT Nº</label>
+          <span>${data.artRrt || 'N/A'}</span>
+        </div>
+      </div>
+      <div class="doc-meta doc-meta-2" style="border-bottom:none;">
+        <div class="meta-cell">
+          <label>Responsável Técnico</label>
+          <span>${data.responsavelTecnico}</span>
+        </div>
+        <div class="meta-cell">
+          <label>CREA / CAU / CFT</label>
+          <span>${data.creaCau || '—'}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SEÇÃO 1 — CONCLUSÃO / PARECER EXECUTIVO
+    ══════════════════════════════════════ -->
+    <div class="rt-section avoid-break">
+      <div class="rt-section-title">${S()} Parecer Executivo — Conclusão</div>
+      <div class="conclusao-box">
+        <span class="conclusao-label">Síntese dos Achados e Recomendação Final</span>
+        <div class="conclusao-text">${mdToHtml(data.conclusao)}</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SEÇÃO 2 — OBJETIVO
+    ══════════════════════════════════════ -->
+    <div class="rt-section avoid-break">
+      <div class="rt-section-title">${S()} Objetivo da Inspeção / Análise</div>
+      <div class="section-body">${mdToHtml(data.objetivo)}</div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SEÇÃO 3 — METODOLOGIA
+    ══════════════════════════════════════ -->
+    <div class="rt-section avoid-break">
+      <div class="rt-section-title">${S()} Metodologia e Procedimentos Adotados</div>
+      <div class="section-body">${mdToHtml(data.metodologia)}</div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SEÇÃO 4+ — DIAGNÓSTICO
+    ══════════════════════════════════════ -->
+    ${data.diagnostico.length > 0 ? `
+    <div class="rt-section">
+      <div class="rt-section-title">${S()} Diagnóstico e Análise Técnica</div>
+      ${data.diagnostico.map((d, i) => `
+      <div class="diag-item avoid-break">
+        <div class="diag-sub-header">
+          <span class="diag-sub-num">${sec}.${i + 1}</span>
+          ${d.titulo}
+        </div>
+        <div class="diag-content">${mdToHtml(d.conteudo)}</div>
+        ${d.fotos.length > 0 ? `
+        <div class="diag-fotos">
+          ${d.fotos.map((f, fi) => `
+          <div class="diag-foto-item">
+            <img src="${f.url}" class="diag-foto-img" />
+            <div class="diag-foto-cap">Fig. ${i + 1}.${fi + 1} — ${f.caption || 'Registro de campo.'}</div>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`).join('')}
+    </div>` : ''}
+
+    <!-- ══════════════════════════════════════
+         RECOMENDAÇÕES
+    ══════════════════════════════════════ -->
+    ${data.recomendacoes.length > 0 ? `
+    <div class="rt-section avoid-break">
+      <div class="rt-section-title">${S()} Plano de Ação e Recomendações</div>
+      <table class="rec-table">
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th style="width:80px;">Prioridade</th>
+            <th>Recomendação Técnica</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(data.recomendacoes as Recomendacao[]).map((r, i) => {
+            const cfg = PRI_CONFIG[r.prioridade] || PRI_CONFIG.media
+            return `
+          <tr style="background:${cfg.bg};">
+            <td style="text-align:center;color:#94a3b8;font-size:8pt;">${String(i + 1).padStart(2, '0')}</td>
+            <td><span class="rec-badge" style="background:${cfg.badge};">${cfg.label}</span></td>
+            <td>${r.texto}</td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    <!-- ══════════════════════════════════════
+         REGISTRO FOTOGRÁFICO GERAL
+    ══════════════════════════════════════ -->
+    ${data.fotosGerais.length > 0 ? `
+    <div class="rt-section page-break">
+      <div class="rt-section-title">${S()} Registro Fotográfico (${totalFotos} imagem${totalFotos !== 1 ? 'ns' : ''})</div>
+      <div class="foto-grid-2">
+        ${data.fotosGerais.map((f, i) => `
+        <div class="foto-cell">
+          <div class="foto-img-wrap"><img src="${f.url}" class="foto-img" /></div>
+          <div class="foto-caption">Foto ${String(i + 1).padStart(2, '0')} — ${f.caption || 'Evidência fotográfica.'}</div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- ══════════════════════════════════════
+         ASSINATURA
+    ══════════════════════════════════════ -->
+    <div class="rt-section avoid-break">
+      <div class="rt-section-title">${S()} Assinaturas e Responsabilidade Técnica</div>
+      <div class="assinatura-grid">
+        <div class="assinatura-cell">
+          <span class="assinatura-label">Responsável Técnico pelo Relatório</span>
+          <div class="assinatura-line">
+            <div class="assinatura-name">${data.responsavelTecnico}</div>
+            <span class="assinatura-role">CREA/CAU/CFT: ${data.creaCau || '—'}</span>
+            <span class="assinatura-role">${data.companyName || 'RelatorioFlow'}</span>
+          </div>
+        </div>
+        <div class="assinatura-cell">
+          <span class="assinatura-label">Contratante / Cliente / Fiscalização</span>
+          <div class="assinatura-line">
+            <div class="assinatura-name">&nbsp;</div>
+            <span class="assinatura-role">${data.clientName || '—'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="rt-footer">
+      <span><strong>${data.projectName}</strong> · RT Nº ${data.numeroRelatorio} · ${dateShort}</span>
+      <span>Gerado por RelatorioFlow · ABNT NBR 10719</span>
+    </div>
+
   </div>
-
 </body>
 </html>`
 }
@@ -267,8 +495,6 @@ export function openRelatorioTecnicoPDF(data: RelatorioTecnicoPDFData) {
   const url = URL.createObjectURL(blob)
   const win = window.open(url, '_blank')
   if (win) {
-    win.onload = () => {
-      setTimeout(() => URL.revokeObjectURL(url), 10000)
-    }
+    win.onload = () => setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 }

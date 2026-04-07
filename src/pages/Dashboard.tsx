@@ -40,7 +40,7 @@ function useRecentReports() {
       }))
       const tech: ReportItem[] = (techRes.data || []).map((r: any) => ({
         id: r.id, type: 'tecnico',
-        title: r.numero_relatorio ? `RT-${r.numero_relatorio}` : 'Relatório Técnico',
+        title: r.numero_relatorio ? `Relatório ${r.numero_relatorio}` : 'Relatório Técnico',
         project: r.projects?.name || 'Sem projeto', date: r.report_date, status: r.status,
       }))
       return [...daily, ...tech].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)

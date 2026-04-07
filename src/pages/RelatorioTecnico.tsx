@@ -75,7 +75,7 @@ export default function RelatorioTecnico() {
     { title: 'Finalização', description: 'Conclusão' },
   ]
 
-  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, control, handleSubmit, watch, setValue, reset, trigger, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       numero_relatorio: `${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`,
@@ -229,8 +229,27 @@ export default function RelatorioTecnico() {
     navigate('/app/dashboard')
   }
 
-  const nextStep = () => { if (currentStep < steps.length - 1) { setCurrentStep(currentStep + 1); window.scrollTo(0, 0) } }
   const prevStep = () => { if (currentStep > 0) { setCurrentStep(currentStep - 1); window.scrollTo(0, 0) } }
+
+  // Campos obrigatórios por passo
+  const stepFields: Record<number, (keyof FormData)[]> = {
+    0: ['numero_relatorio', 'report_date', 'responsavel_tecnico'],
+    1: ['objetivo', 'metodologia'],
+    2: ['diagnostico'],
+    3: ['conclusao'],
+  }
+
+  const nextStep = async () => {
+    if (currentStep >= steps.length - 1) return
+    const fields = stepFields[currentStep] || []
+    const isValid = await trigger(fields as any)
+    if (!isValid) {
+      toast.error('Preencha os campos obrigatórios antes de continuar.')
+      return
+    }
+    setCurrentStep(currentStep + 1)
+    window.scrollTo(0, 0)
+  }
 
   return (
     <div className="max-w-3xl space-y-6 pb-24">
