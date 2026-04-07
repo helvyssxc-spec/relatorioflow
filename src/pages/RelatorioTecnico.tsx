@@ -64,7 +64,7 @@ export default function RelatorioTecnico() {
   const [fotosGerais, setFotosGerais] = useState<FotoItem[]>([])
   const [projectName, setProjectName] = useState('')
   const [projectData, setProjectData] = useState<any>(null)
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
+  const [syncStatus, setSyncStatus] = useState<import('@/components/ui/SyncStatus').SyncState>('synced')
   const [lastSynced, setLastSynced] = useState<string>('')
   const [currentStep, setCurrentStep] = useState(0)
 
@@ -134,7 +134,7 @@ export default function RelatorioTecnico() {
         setLastSynced(format(new Date(), 'HH:mm'))
       } catch (err) {
         console.error('Cloud Sync Error:', err)
-        setSyncStatus('error')
+        setSyncStatus('offline')
       }
     }
     if (debouncedFormValues.objetivo || debouncedFormValues.conclusao || fotosGerais.length > 0) {

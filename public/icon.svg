@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="96" fill="#1A56DB"/>
+  <!-- Hard hat shape -->
+  <ellipse cx="256" cy="310" rx="180" ry="30" fill="#1e40af"/>
+  <path d="M 76 310 Q 76 180 256 160 Q 436 180 436 310 Z" fill="#3b82f6"/>
+  <ellipse cx="256" cy="310" rx="180" ry="22" fill="#1d4ed8"/>
+  <!-- Brim -->
+  <rect x="56" y="296" width="400" height="28" rx="14" fill="#1e3a8a"/>
+  <!-- Document lines -->
+  <rect x="192" y="340" width="128" height="8" rx="4" fill="white" opacity="0.9"/>
+  <rect x="212" y="356" width="88" height="6" rx="3" fill="white" opacity="0.6"/>
+</svg>

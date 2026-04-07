@@ -76,7 +76,7 @@ export default function DiarioObra() {
   const [weatherData, setWeatherData] = useState<{ temperature: number; description: string } | null>(null)
   const [projectName, setProjectName] = useState('')
   const [projectData, setProjectData] = useState<any>(null)
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
+  const [syncStatus, setSyncStatus] = useState<import('@/components/ui/SyncStatus').SyncState>('synced')
   const [lastSynced, setLastSynced] = useState<string>('')
   const [currentStep, setCurrentStep] = useState(0)
 
@@ -153,7 +153,7 @@ export default function DiarioObra() {
         setLastSynced(format(new Date(), 'HH:mm'))
       } catch (err) {
         console.error('Cloud Sync Error:', err)
-        setSyncStatus('error')
+        setSyncStatus('offline')
       }
     }
 
