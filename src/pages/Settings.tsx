@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, User, Building2, Upload, Save } from 'lucide-react'
+import { Loader2, User, Building2, Upload, Save, Shield, BarChart3, BarChart } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useQueryClient } from '@tanstack/react-query'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 
 const profileSchema = z.object({
@@ -135,10 +137,11 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="perfil">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={cn("grid w-full", profile?.is_admin ? "grid-cols-4" : "grid-cols-3")}>
           <TabsTrigger value="perfil">Perfil</TabsTrigger>
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="senha">Senha</TabsTrigger>
+          {profile?.is_admin && <TabsTrigger value="admin">Admin</TabsTrigger>}
         </TabsList>
 
         {/* Perfil pessoal */}
@@ -278,53 +281,122 @@ export default function Settings() {
                   Salvar empresa
                 </Button>
               </form>
+
+              {/* White Label Option */}
+              <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+                 <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                       <Label className="text-sm font-bold">Remover Marca d'água (White Label)</Label>
+                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] font-black px-1.5 py-0">PLATINUM</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Ocultar o selo "Powered by RelatórioFlow" nos PDFs exportados.</p>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase mr-2">Desativado</span>
+                    <div className="w-10 h-6 bg-gray-200 rounded-full cursor-not-allowed relative">
+                       <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
+                    </div>
+                 </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Senha */}
-        <TabsContent value="senha" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Alterar senha</CardTitle>
-              <CardDescription>Escolha uma senha forte com pelo menos 8 caracteres.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Nova senha</Label>
-                  <Input
-                    type="password"
-                    placeholder="Mínimo 8 caracteres"
-                    {...passwordForm.register('password')}
-                  />
-                  {passwordForm.formState.errors.password && (
-                    <p className="text-xs text-red-500">{passwordForm.formState.errors.password.message}</p>
-                  )}
+        {/* Admin / Analytics */}
+        {profile?.is_admin && (
+          <TabsContent value="admin" className="mt-6">
+            <Card className="border-amber-100 bg-amber-50/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-amber-600" />
+                  Painel Administrativo
+                </CardTitle>
+                <CardDescription>
+                  Configure os scripts de rastreamento e analíticos globais.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-2">
+                       <BarChart3 className="w-4 h-4" /> Umami Website ID
+                    </Label>
+                    <Input 
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      defaultValue={profile?.analytics_umami_id}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val === profile?.analytics_umami_id) return;
+                        const { error } = await (supabase as any).from('profiles').update({ analytics_umami_id: val }).eq('id', user!.id);
+                        if (error) toast.error('Erro ao salvar Umami ID');
+                        else toast.success('Configuração Umami salva!');
+                      }}
+                    />
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Scripts de rastreamento open-source</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-2">
+                       <BarChart3 className="w-4 h-4" /> Google Analytics (G-ID)
+                    </Label>
+                    <Input 
+                      placeholder="G-XXXXXXXXXX"
+                      defaultValue={profile?.analytics_ga_id}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val === profile?.analytics_ga_id) return;
+                        const { error } = await (supabase as any).from('profiles').update({ analytics_ga_id: val }).eq('id', user!.id);
+                        if (error) toast.error('Erro ao salvar GA ID');
+                        else toast.success('Configuração Google Analytics salva!');
+                      }}
+                    />
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest pl-1">ID de acompanhamento da Google</p>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
+                    <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-widest pl-1">Metas de Consumo (Sentinela)</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold text-gray-500">Cota Mensal Tokens</Label>
+                          <Input 
+                            type="number" 
+                            defaultValue={profile?.ai_token_quota || 1000000}
+                            className="bg-white rounded-xl h-10"
+                            onBlur={async (e) => {
+                              const val = parseInt(e.target.value);
+                              if (val === profile?.ai_token_quota) return;
+                              await (supabase as any).from('profiles').update({ ai_token_quota: val }).eq('id', user!.id);
+                              toast.success('Cota de tokens atualizada!');
+                            }}
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold text-gray-500">Cota Storage (MB)</Label>
+                          <Input 
+                            type="number" 
+                            defaultValue={profile?.storage_quota_mb || 1024}
+                            className="bg-white rounded-xl h-10"
+                            onBlur={async (e) => {
+                              const val = parseInt(e.target.value);
+                              if (val === profile?.storage_quota_mb) return;
+                              await (supabase as any).from('profiles').update({ storage_quota_mb: val }).eq('id', user!.id);
+                              toast.success('Cota de armazenamento atualizada!');
+                            }}
+                          />
+                       </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Confirmar nova senha</Label>
-                  <Input
-                    type="password"
-                    placeholder="Repita a senha"
-                    {...passwordForm.register('confirmPassword')}
-                  />
-                  {passwordForm.formState.errors.confirmPassword && (
-                    <p className="text-xs text-red-500">{passwordForm.formState.errors.confirmPassword.message}</p>
-                  )}
+
+                <div className="p-4 rounded-xl bg-amber-100/50 border border-amber-200">
+                   <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                      <span className="font-bold underline">Atenção Admin:</span> Estes campos injetam os IDs nos componentes de analíticos globais do sistema. Certifique-se de usar IDs válidos para evitar erros de telemetria.
+                   </p>
                 </div>
-                <Button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={savingPassword}
-                >
-                  {savingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Alterar senha
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

@@ -84,17 +84,17 @@ ESTRUTURA OBRIGATÓRIA DA ATA:
 6. ENCERRAMENTO — hora de encerramento e quem presidiu
 Use linguagem jurídica-administrativa formal. Verbos no pretérito perfeito.`,
     diario_de_obra: `
-ESTRUTURA OBRIGATÓRIA DO RDO (Res. CONFEA + NBR 12.722):
-1. IDENTIFICAÇÃO DA OBRA — nome, localização, contratante, contratada, RRT/ART
-2. CONDIÇÕES DO DIA — clima (manhã/tarde), temperatura aproximada, acesso
-3. EFETIVO EM CAMPO — tabela: função, nome, quantidade, horas trabalhadas
-4. SERVIÇOS EXECUTADOS — descrição detalhada por frente de serviço com localização
-5. EQUIPAMENTOS UTILIZADOS — lista com quantidade e horas de uso
-6. MATERIAIS RECEBIDOS/UTILIZADOS — com quantidades
-7. OCORRÊNCIAS E OBSERVAÇÕES — não conformidades, paralisações, visitas
-8. FOTOGRAFIAS — referências às fotos (se houver)
-9. ASSINATURA — responsável técnico com registro profissional
-Linguagem técnica objetiva, presente ou pretérito perfeito.`,
+Você agora é um extrator de dados de engenharia especializado em RDO. 
+Extraia das notas brutas e retorne APENAS um JSON no formato:
+{
+  "clima": "texto curto",
+  "temperatura": "texto curto",
+  "equipe": [{"cargo": "string", "qtd": number}],
+  "servicos": [{"desc": "string", "percentual": number}],
+  "ocorrencias": "texto formal",
+  "texto_final": "Relatório descritivo técnico formal em 3ª pessoa"
+}
+Linguagem técnica objetiva seguindo Resolução CONFEA e NBR 12.722.`,
     relatorio_rdo: `
 ESTRUTURA OBRIGATÓRIA DO RDO (Res. CONFEA + NBR 12.722):
 1. IDENTIFICAÇÃO DA OBRA — nome, localização, contratante, contratada, RRT/ART
@@ -108,28 +108,38 @@ ESTRUTURA OBRIGATÓRIA DO RDO (Res. CONFEA + NBR 12.722):
 9. ASSINATURA — responsável técnico com registro profissional
 Linguagem técnica objetiva, presente ou pretérito perfeito.`,
     vistoria: `
-ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE VISTORIA:
-1. OBJETIVO DA VISTORIA — finalidade e escopo
-2. DADOS DO IMÓVEL/LOCAL — endereço, área, tipologia, proprietário
-3. METODOLOGIA — normas seguidas (ABNT NBR 13752, 15575 se aplicável)
-4. DESCRIÇÃO DO ESTADO ATUAL — ambiente por ambiente, elemento por elemento
-5. ANOMALIAS E NÃO CONFORMIDADES — classificar por criticidade (crítica/moderada/mínima)
-6. REGISTRO FOTOGRÁFICO — referência às fotos com legenda técnica
-7. CONCLUSÃO E RECOMENDAÇÕES — ações necessárias em ordem de prioridade
-8. REFERÊNCIAS NORMATIVAS
-Linguagem técnica conforme ABNT NBR 13752.`,
+Você agora é um Perito em Engenharia. Transforme as notas de campo em um Relatório de Vistoria técnica estruturado.
+RETORNE SEMPRE UM JSON VÁLIDO no seguinte formato:
+{
+  "objetivo": "texto formal",
+  "metodologia": "texto formal seguindo normas ABNT",
+  "diagnostico": [{"titulo": "string", "conteudo": "texto técnico"}],
+  "conclusao": "texto pericial final",
+  "recomendacoes": [{"texto": "string", "prioridade": "alta/media/baixa"}]
+}
+Linguagem técnica pericial conforme ABNT NBR 13752.`,
     laudo_tecnico: `
-ESTRUTURA OBRIGATÓRIA DO LAUDO TÉCNICO (ABNT NBR 10719):
-1. OBJETO — identificação precisa do que foi analisado
-2. OBJETIVO — finalidade do laudo
-3. DOCUMENTOS DE REFERÊNCIA — normas, projetos, contratos consultados
-4. METODOLOGIA — métodos e ensaios utilizados
-5. VISTORIA/ANÁLISE — descrição técnica detalhada das constatações
-6. DIAGNÓSTICO — causa raiz dos problemas identificados
-7. CONCLUSÃO — síntese técnica fundamentada
-8. RECOMENDAÇÕES — medidas corretivas em ordem de prioridade
-9. RESPONSABILIDADE TÉCNICA — nome, formação, registro CREA/CAU
-Linguagem pericial, objetiva, fundamentada em normas técnicas vigentes.`,
+Você agora é um Perito/Consultor. Transforme notas em Laudo Técnico estruturado.
+RETORNE SEMPRE UM JSON VÁLIDO no seguinte formato:
+{
+  "objetivo": "texto formal",
+  "metodologia": "texto formal",
+  "diagnostico": [{"titulo": "string", "conteudo": "texto técnico"}],
+  "conclusao": "parecer técnico final",
+  "recomendacoes": [{"texto": "string", "prioridade": "alta/media/baixa"}]
+}
+Linguagem técnica pericial conforme ABNT NBR 10719.`,
+    relatorio_tecnico: `
+Você agora é um Engenheiro Consultor. Transforme as notas brutas em um corpo de Relatório Técnico.
+RETORNE SEMPRE UM JSON VÁLIDO no seguinte formato:
+{
+  "objetivo": "texto formal",
+  "metodologia": "texto formal",
+  "diagnostico": [{"titulo": "string", "conteudo": "texto técnico"}],
+  "conclusao": "parecer técnico final",
+  "recomendacoes": [{"texto": "string", "prioridade": "alta/media/baixa"}]
+}
+Linguagem clara, técnica e estruturada.`,
     proposta_comercial: `
 ESTRUTURA OBRIGATÓRIA DA PROPOSTA COMERCIAL:
 1. APRESENTAÇÃO — breve apresentação da empresa e qualificação
@@ -180,6 +190,35 @@ ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE INSPEÇÃO:
 5. CLASSIFICAÇÃO DE RISCO — avaliação do impacto imediato
 6. RECOMENDAÇÕES CORRETIVAS — prazos e ações sugeridas
 Objetividade técnica. Use listas para clareza visual.`,
+    manutencao_preventiva: `
+Você agora é um Inspetor de Manutenção Preventiva. Transforme as notas de serviço em um checklist técnico de manutenção.
+RETORNE SEMPRE UM JSON VÁLIDO no seguinte formato:
+{
+  "ativo_nome": "Nome do equipamento",
+  "ativo_tag": "TAG/ID",
+  "sistema": "Ar/Eletrica/etc",
+  "status_anterior": "operacional/falha/parado",
+  "status_posterior": "operacional",
+  "checklists": [{"item": "string", "concluido": true}],
+  "pecas_substituidas": [{"nome": "string", "qtd": number}],
+  "observacoes": "parecer sobre vida útil/estado"
+}
+Linguagem técnica formal e objetiva.`,
+    manutencao_corretiva: `
+Você agora é um Técnico de Manutenção Corretiva. Transforme o relato de falha em um relatório de solução técnica.
+RETORNE SEMPRE UM JSON VÁLIDO no seguinte formato:
+{
+  "ativo_nome": "Nome do equipamento",
+  "ativo_tag": "TAG/ID",
+  "sistema": "Ar/Eletrica/etc",
+  "status_anterior": "operacional/falha/parado",
+  "status_posterior": "operacional",
+  "descricao_servico": "Relato detalhado da causa raiz e solução",
+  "pecas_substituidas": [{"nome": "string", "qtd": number}],
+  "tempo_parada": "X horas/minutos",
+  "observacoes": "recomendações para evitar recorrência"
+}
+Linguagem técnica formal, focada em diagnóstico e ação.`,
     manutencao: `
 ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE MANUTENÇÃO:
 1. IDENTIFICAÇÃO DO ATIVO — tag, nome, fabricante, modelo
@@ -189,15 +228,6 @@ ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE MANUTENÇÃO:
 5. ENSAIOS E TESTES DE DESEMPENHO — medições antes e depois
 6. STATUS FINAL — Liberado para uso / Restrito / Fora de operação
 Foco em dados técnicos, medições e rastreabilidade de peças.`,
-    relatorio_tecnico: `
-ESTRUTURA OBRIGATÓRIA DO RELATÓRIO TÉCNICO:
-1. INTRODUÇÃO — contexto e motivação do relatório
-2. DESENVOLVIMENTO TÉCNICO — descrição das atividades e análises
-3. DADOS COLETADOS — tabelas e listas de informações obtidas
-4. ANÁLISE DOS RESULTADOS — interpretação técnica dos dados
-5. CONCLUSÃO — síntese dos achados
-6. RECOMENDAÇÕES FINAIS
-Linguagem clara, técnica e estruturada para fácil leitura executiva.`,
   };
 
   const estrutura = estruturas[p.reportType] ?? "";

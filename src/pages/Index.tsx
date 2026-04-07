@@ -264,7 +264,7 @@ export default function Index() {
                 'IA Especialista em Engenharia',
                 'Modo Offline Híbrido',
                 'Sub-domínio personalizado',
-                'Suporte Prioritário por E-mail',
+                'Suporte Prioritário por Chamados',
                 'Backup em Tempo Real'
               ].map(item => (
                 <div key={item} className="flex items-center gap-3">
@@ -314,7 +314,7 @@ export default function Index() {
           <div className="flex gap-8 text-[11px] font-black uppercase tracking-widest text-gray-400">
             <a href="#" className="hover:text-blue-600">Termos</a>
             <a href="#" className="hover:text-blue-600">Privacidade</a>
-            <a href="#" className="hover:text-blue-600">Suporte</a>
+            <Link to="/app/suporte" className="hover:text-blue-600">Suporte</Link>
           </div>
           <p className="text-xs font-bold text-gray-300">
             © {new Date().getFullYear()} RelatorioFlow. Software for Heavy Engineering.

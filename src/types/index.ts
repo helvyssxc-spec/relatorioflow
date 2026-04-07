@@ -101,5 +101,10 @@ export interface UserProfile {
   phone?: string
   email: string
   has_access: boolean
+  is_admin?: boolean
+  analytics_umami_id?: string
+  analytics_ga_id?: string
+  ai_token_quota?: number
+  storage_quota_mb?: number
   created_at: string
 }

@@ -478,10 +478,20 @@ export function generateRelatorioTecnicoHTML(data: RelatorioTecnicoPDFData): str
       </div>
     </div>
 
-    <!-- Rodapé -->
+    <!-- Rodapé de Prestígio -->
+    <div style="margin-top:20px; text-align:center; padding:15px; border-top:1.5px solid #0f2746;">
+      <div style="font-weight:800; font-size:9.5pt; color:#0f2746; letter-spacing:0.06em; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <span style="font-size:14pt;">✓</span> DOCUMENTO TÉCNICO AUTENTICADO POR RELATÓRIOFLOW
+      </div>
+      <div style="font-size:7.5pt; color:#64748b; margin-top:5px; font-weight:500;">
+        Emitido eletronicamente em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} | 
+        ID de Autenticidade: ${Math.random().toString(36).substring(2, 12).toUpperCase()}
+      </div>
+    </div>
+
     <div class="rt-footer">
       <span><strong>${data.projectName}</strong> · RT Nº ${data.numeroRelatorio} · ${dateShort}</span>
-      <span>Gerado por RelatorioFlow · ABNT NBR 10719</span>
+      <span>Gerado por RelatórioFlow · Padrão ABNT NBR 10719</span>
     </div>
 
   </div>

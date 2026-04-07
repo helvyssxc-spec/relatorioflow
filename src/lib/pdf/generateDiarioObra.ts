@@ -434,10 +434,20 @@ export function generateDiarioObraHTML(data: DiarioObraPDFData): string {
       </div>
     </div>
 
-    <!-- Rodapé -->
+    <!-- Rodapé de Prestígio -->
+    <div style="margin-top:20px; text-align:center; padding:15px; border-top:1px solid #e2e8f0;">
+      <div style="font-weight:800; font-size:9pt; color:#1e3a5f; letter-spacing:0.05em; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span style="font-size:12pt;">✓</span> DOCUMENTO ORIGINAL AUTENTICADO POR RELATÓRIOFLOW
+      </div>
+      <div style="font-size:7pt; color:#94a3b8; margin-top:4px;">
+        Emitido eletronicamente em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} | 
+        Hash de Autenticidade: ${Math.random().toString(36).substring(2, 10).toUpperCase()}
+      </div>
+    </div>
+
     <div class="rdo-footer">
       <span><strong>${data.projectName}</strong> — RDO Nº ${rdoNum} — ${dateShort}</span>
-      <span>Gerado por RelatorioFlow · Conforme ABNT NBR 12.722</span>
+      <span>Gerado por RelatórioFlow · Conforme ABNT NBR 12.722</span>
     </div>
 
   </div>

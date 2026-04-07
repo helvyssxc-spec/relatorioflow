@@ -2,19 +2,22 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Camera, Mic, FileDown, Loader2, X, CheckCircle2,
-  ChevronLeft, Sparkles, Square, RotateCcw, Volume2
+  ChevronLeft, Sparkles, Square, RotateCcw, Volume2, CloudOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { openDiarioObraPDF } from '@/lib/pdf/generateDiarioObra'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useOfflineSync, useOfflineStatus } from '@/hooks/useOfflineSync'
+import { getDB, saveBlob } from '@/lib/offline/db'
 
 // ── Types ──────────────────────────────────────────────────────────────────
-interface PhotoItem { id: string; url: string; publicUrl: string; caption: string; uploading?: boolean }
+interface PhotoItem { id: string; url: string; publicUrl: string; caption: string; uploading?: boolean; offline?: boolean }
 type GenerateState = 'idle' | 'generating' | 'done'
 type RecordState   = 'idle' | 'recording' | 'done'
 
@@ -98,6 +101,9 @@ export default function DiarioObra() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const projectId = searchParams.get('project')
+  
+  // ── Offline Sync ──
+  useOfflineSync()
 
   // ── state ──
   const [projectData, setProjectData] = useState<any>(null)
@@ -113,6 +119,14 @@ export default function DiarioObra() {
   const [notes, setNotes]             = useState('')
   const [genState, setGenState]       = useState<GenerateState>('idle')
   const [generatedText, setGeneratedText] = useState('')
+  const [sessionId]                   = useState(() => crypto.randomUUID())
+
+  // ── structured data from AI ──
+  const [weather, setWeather] = useState('')
+  const [temp, setTemp]       = useState('')
+  const [team, setTeam]       = useState<any[]>([])
+  const [services, setServices] = useState<any[]>([])
+  const [occurrences, setOccurrences] = useState('')
 
   // ── load project ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -122,30 +136,82 @@ export default function DiarioObra() {
   }, [projectId, user])
 
   // ── PHOTOS ───────────────────────────────────────────────────────────────
+  const isOnline = useOfflineStatus()
+
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+
   const handlePhotos = useCallback(async (files: FileList | null) => {
     if (!files || !user) return
     for (const file of Array.from(files)) {
       const tempId  = crypto.randomUUID()
       const preview = URL.createObjectURL(file)
       setPhotos(p => [...p, { id: tempId, url: preview, publicUrl: '', caption: '', uploading: true }])
+      setUploadProgress(prev => ({ ...prev, [tempId]: 0 }))
+
       try {
         const blob = await compressImg(file)
+        await saveBlob(tempId, blob, file.type)
+
         const ext  = file.type === 'image/png' ? 'png' : 'jpg'
-        const path = `${user.id}/diario/${tempId}.${ext}`
-        const { error } = await supabase.storage.from('reports').upload(path, blob, { contentType: 'image/jpeg' })
-        if (error) throw error
-        const { data: urlData } = supabase.storage.from('reports').getPublicUrl(path)
-        setPhotos(p => p.map(x => x.id === tempId
-          ? { ...x, url: preview, publicUrl: urlData.publicUrl, uploading: false }
-          : x
-        ))
-      } catch {
+        const path = `${user.id}/diario/${sessionId}/${tempId}.${ext}`
+
+        if (!isOnline) {
+          // Offline: Simula progresso rápido até salvar no IDB
+          let prog = 0
+          const interval = setInterval(() => {
+            prog += 15
+            if (prog >= 100) {
+              clearInterval(interval)
+              setPhotos(p => p.map(x => x.id === tempId
+                ? { ...x, url: preview, publicUrl: '', uploading: false, offline: true }
+                : x
+              ))
+              toast.info('Foto salva localmente.')
+            }
+            setUploadProgress(prev => ({ ...prev, [tempId]: Math.min(prog, 100) }))
+          }, 50)
+          
+          const db = await getDB()
+          await db.put('sync_queue', {
+            id: tempId,
+            type: 'photo_upload',
+            payload: { photoId: tempId, userId: user.id, path, type: file.type, bucket: 'report-images' },
+            createdAt: Date.now(),
+            attempts: 0
+          })
+        } else {
+          // Online: Simula progresso fluido enquanto aguarda Supabase
+          const interval = setInterval(() => {
+            setUploadProgress(prev => {
+              const current = prev[tempId] || 0
+              if (current < 92) return { ...prev, [tempId]: current + (92 - current) * 0.1 }
+              return prev
+            })
+          }, 200)
+
+          const { error } = await supabase.storage.from('report-images').upload(path, blob, { contentType: 'image/jpeg' })
+          
+          clearInterval(interval)
+          if (error) throw error
+          
+          setUploadProgress(prev => ({ ...prev, [tempId]: 100 }))
+          const { data: urlData } = supabase.storage.from('report-images').getPublicUrl(path)
+          
+          setTimeout(() => {
+            setPhotos(p => p.map(x => x.id === tempId
+              ? { ...x, url: preview, publicUrl: urlData.publicUrl, uploading: false }
+              : x
+            ))
+          }, 300)
+        }
+      } catch (e) {
+        console.error(e)
         setPhotos(p => p.filter(x => x.id !== tempId))
-        toast.error('Erro ao enviar foto. Tente novamente.')
+        toast.error('Erro ao processar foto.')
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [user])
+  }, [user, isOnline, sessionId])
 
   // ── SPEECH-TO-TEXT ────────────────────────────────────────────────────────
   const startRecording = useCallback(() => {
@@ -228,7 +294,50 @@ export default function DiarioObra() {
         reportDate:      today,
         imagesCount:     photos.filter(p => !p.uploading).length,
       })
-      setGeneratedText(text)
+      
+      // LOG DE AUDITORIA
+      if (user) {
+        await (supabase as any).from('audit_logs').insert({
+          user_id: user.id,
+          action: 'report.generated',
+          metadata: {
+            report_type: 'diario_de_obra',
+            session_id: sessionId,
+            images_count: photos.length,
+            chars_input: rawNotes.length
+          }
+        })
+      }
+
+      // Tenta parsear o JSON retornado pela IA
+      try {
+        const parsed = JSON.parse(text)
+        setWeather(parsed.clima ?? '')
+        setTemp(parsed.temperatura ?? '')
+        setTeam(parsed.equipe ?? [])
+        setServices(parsed.servicos ?? [])
+        setOccurrences(parsed.ocorrencias ?? '')
+        setGeneratedText(parsed.texto_final ?? '')
+      } catch {
+        // Se falhar o parse (ex: markdown em volta), tenta extrair o que está entre chaves
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0])
+            setWeather(parsed.clima ?? '')
+            setTemp(parsed.temperatura ?? '')
+            setTeam(parsed.equipe ?? [])
+            setServices(parsed.servicos ?? [])
+            setOccurrences(parsed.ocorrencias ?? '')
+            setGeneratedText(parsed.texto_final ?? '')
+          } catch {
+            setGeneratedText(text) // Fallback para texto puro
+          }
+        } else {
+          setGeneratedText(text)
+        }
+      }
+      
       setGenState('done')
     } catch (e: any) {
       toast.error(e.message ?? 'Erro ao gerar relatório.')
@@ -239,26 +348,44 @@ export default function DiarioObra() {
   // ── EXPORT PDF ────────────────────────────────────────────────────────────
   const exportPDF = async () => {
     const date = new Date().toISOString().split('T')[0]
+    const reportData = {
+      user_id:        user.id,
+      project_id:     projectId,
+      report_date:    date,
+      responsavel:    profile?.full_name ?? 'Responsável Técnico',
+      condicao_tempo: weather || 'Não informado',
+      temperatura:    temp || '',
+      clima_json:     {},
+      equipe:         team,
+      atividades:     services.map(s => ({ 
+        descricao: s.desc, 
+        disciplina: 'Geral', 
+        percentual_concluido: s.percentual, 
+        observacao: '' 
+      })),
+      equipamentos:   [],
+      ocorrencias:    occurrences || transcript || notes || '',
+      fotos:          photos.filter(p => !p.uploading).map(p => ({ id: p.id, url: p.publicUrl, caption: p.caption })),
+      status:         'finalizado',
+    }
 
     try {
       if (projectId && user) {
-        await (supabase as any).from('daily_reports').upsert({
-          user_id:        user.id,
-          project_id:     projectId,
-          report_date:    date,
-          responsavel:    profile?.full_name ?? 'Responsável Técnico',
-          condicao_tempo: 'Não informado',
-          temperatura:    '',
-          clima_json:     {},
-          equipe:         [],
-          atividades:     [{ descricao: generatedText, disciplina: 'Geral', percentual_concluido: 100, observacao: '' }],
-          equipamentos:   [],
-          ocorrencias:    transcript || notes || '',
-          fotos:          photos.filter(p => !p.uploading).map(p => ({ id: p.id, url: p.publicUrl, caption: p.caption })),
-          status:         'finalizado',
-        }, { onConflict: 'project_id,report_date' })
+        if (!isOnline) {
+          const db = await getDB()
+          await db.put('sync_queue', {
+            id: `report-${Date.now()}`,
+            type: 'report_save',
+            payload: { table: 'daily_reports', data: reportData },
+            createdAt: Date.now(),
+            attempts: 0
+          })
+          toast.info('Relatório salvo em modo offline. Será sincronizado em breve.')
+        } else {
+          await (supabase as any).from('daily_reports').upsert(reportData, { onConflict: 'project_id,report_date' })
+        }
       }
-    } catch { /* segue */ }
+    } catch (e) { console.error('Erro ao salvar:', e) }
 
     openDiarioObraPDF({
       projectName:     projectData?.name ?? 'Obra',
@@ -342,13 +469,31 @@ export default function DiarioObra() {
               <div className="grid grid-cols-3 gap-2">
                 {photos.map((photo) => (
                   <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
-                    {photo.uploading ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    {photo.uploading && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px] space-y-2">
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span className="text-[10px] font-black text-white tabular-nums">
+                          {Math.round(uploadProgress[photo.id] || 0)}%
+                        </span>
+                        <div className="w-12 h-1 bg-white/20 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all duration-300 ease-out" 
+                            style={{ width: `${uploadProgress[photo.id] || 0}%` }} 
+                          />
+                        </div>
                       </div>
-                    ) : (
+                    )}
+                    
+                    {!photo.uploading && (
                       <img src={photo.url} alt="evidência" className="w-full h-full object-cover" />
                     )}
+
+                    {photo.offline && !photo.uploading && (
+                      <div className="absolute top-1 left-1 bg-amber-500 rounded-full p-1 shadow-sm" title="Pendente de sincronização">
+                        <CloudOff className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+
                     {!photo.uploading && (
                       <button
                         onClick={() => setPhotos(p => p.filter(x => x.id !== photo.id))}
@@ -356,11 +501,6 @@ export default function DiarioObra() {
                       >
                         <X className="w-3 h-3 text-white" />
                       </button>
-                    )}
-                    {photo.uploading && (
-                      <div className="absolute bottom-1 left-1 right-1 h-1 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }} />
-                      </div>
                     )}
                   </div>
                 ))}
@@ -515,33 +655,110 @@ export default function DiarioObra() {
             "rounded-2xl border overflow-hidden transition-all",
             genState === 'generating'
               ? "border-primary/20 bg-primary/3"
-              : "border-emerald-400/40 bg-emerald-50/40 dark:bg-emerald-950/10"
+              : "border-blue-500/30 bg-blue-50/5 dark:bg-blue-900/10"
           )}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-inherit">
               {genState === 'generating'
                 ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                : <Sparkles className="w-4 h-4 text-emerald-500" />
+                : <Sparkles className="w-4 h-4 text-blue-500" />
               }
               <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                {genState === 'generating' ? 'Gerando texto técnico...' : 'Relatório gerado ✓'}
+                {genState === 'generating' ? 'Gerando dados técnicos...' : 'Dados Extraídos com Sucesso ✓'}
               </span>
             </div>
 
             {genState === 'generating' && (
-              <div className="p-4 space-y-2.5">
-                {[90, 80, 95, 70, 85].map((w, i) => (
-                  <div
-                    key={i}
-                    className="h-2.5 bg-primary/10 rounded-full animate-pulse"
-                    style={{ width: `${w}%`, animationDelay: `${i * 120}ms` }}
-                  />
+              <div className="p-6 space-y-4">
+                {[90, 80, 95, 70].map((w, i) => (
+                  <div key={i} className="h-3 bg-primary/10 rounded-full animate-pulse" style={{ width: `${w}%`, animationDelay: `${i * 120}ms` }} />
                 ))}
+                <p className="text-center text-xs text-muted-foreground animate-pulse p-4">A IA está transformando seu áudio e fotos em dados técnicos...</p>
               </div>
             )}
 
-            {genState === 'done' && generatedText && (
-              <div className="p-4">
-                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{generatedText}</p>
+            {genState === 'done' && (
+              <div className="p-6 space-y-8">
+                {/* Cabeçalho Rápido */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Clima</label>
+                    <Input value={weather} onChange={e => setWeather(e.target.value)} className="h-9 rounded-xl bg-background/50" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Temp.</label>
+                    <Input value={temp} onChange={e => setTemp(e.target.value)} className="h-9 rounded-xl bg-background/50" />
+                  </div>
+                </div>
+
+                {/* Efetivo */}
+                <div className="space-y-3">
+                   <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Efetivo em Campo</label>
+                    <Button variant="ghost" size="sm" onClick={() => setTeam([...team, { cargo: 'Novo', qtd: 1 }])} className="h-6 text-[10px] uppercase font-bold text-primary">Add</Button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {team.map((m, i) => (
+                      <div key={i} className="flex gap-2 p-2 rounded-xl bg-background/40 border border-white/5">
+                        <Input value={m.cargo} onChange={e => {
+                          const nt = [...team]; nt[i].cargo = e.target.value; setTeam(nt);
+                        }} className="h-7 text-xs bg-transparent border-none p-0 focus-visible:ring-0" />
+                        <Input type="number" value={m.qtd} onChange={e => {
+                          const nt = [...team]; nt[i].qtd = Number(e.target.value); setTeam(nt);
+                        }} className="h-7 w-12 text-center text-xs bg-white/5 border-none rounded-lg" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Atividades */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Serviços Executados</label>
+                    <Button variant="ghost" size="sm" onClick={() => setServices([...services, { desc: '', percentual: 100 }])} className="h-6 text-[10px] uppercase font-bold text-primary">Add</Button>
+                  </div>
+                  <div className="space-y-3">
+                    {services.map((s, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-background/40 border border-white/5 space-y-2">
+                        <Textarea value={s.desc} onChange={e => {
+                          const ns = [...services]; ns[i].desc = e.target.value; setServices(ns);
+                        }} className="min-h-[50px] text-xs bg-transparent border-none p-0 resize-none focus-visible:ring-0" />
+                        <div className="flex items-center gap-2">
+                          <input type="range" value={s.percentual} onChange={e => {
+                            const ns = [...services]; ns[i].percentual = Number(e.target.value); setServices(ns);
+                          }} className="flex-1 accent-primary h-1 bg-white/10 rounded-full appearance-none cursor-pointer" />
+                          <span className="text-[10px] font-mono text-primary font-bold">{s.percentual}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ocorrências */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Ocorrências / Observações</label>
+                  <Textarea
+                    value={occurrences}
+                    onChange={e => setOccurrences(e.target.value)}
+                    className="min-h-[80px] text-xs rounded-xl bg-background/50 border-white/5 p-4"
+                  />
+                </div>
+
+                {/* Texto Final */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase opacity-70">Relatório Descritivo (Texto Final)</label>
+                  <Textarea
+                    value={generatedText}
+                    onChange={e => setGeneratedText(e.target.value)}
+                    className="min-h-[200px] text-sm leading-relaxed rounded-xl bg-background/50 border-white/5 p-4"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pb-2">
+                  <Button variant="outline" className="rounded-xl h-11 text-xs font-bold uppercase tracking-wider" onClick={() => setGenState('idle')}>Limpar</Button>
+                  <Button className="bg-primary text-primary-foreground rounded-xl h-11 text-xs font-bold uppercase tracking-wider shadow-lg shadow-primary/20" onClick={exportPDF}>
+                    <FileDown className="w-4 h-4 mr-1" /> Exportar
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -584,17 +801,19 @@ export default function DiarioObra() {
             <Button
               size="lg"
               onClick={generate}
-              disabled={!hasContent || genState === 'generating'}
+              disabled={!hasContent || genState === 'generating' || !isOnline}
               className={cn(
                 "w-full h-13 rounded-2xl font-black text-sm shadow-xl tracking-wide transition-all",
-                hasContent
+                hasContent && isOnline
                   ? "bg-primary text-primary-foreground shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98]"
                   : "bg-muted text-muted-foreground shadow-none cursor-not-allowed"
               )}
             >
-              {genState === 'generating'
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando com IA...</>
-                : <><Sparkles className="w-4 h-4 mr-2" /> Gerar Relatório</>
+              {!isOnline 
+                ? <><CloudOff className="w-4 h-4 mr-2" /> IA indisponível sem conexão</>
+                : genState === 'generating'
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando com IA...</>
+                  : <><Sparkles className="w-4 h-4 mr-2" /> Gerar Relatório</>
               }
             </Button>
           ) : (

@@ -30,12 +30,15 @@ export default function Checkout() {
     if (!user) return
     setLoading(true)
     try {
-      // Registra tentativa de checkout no audit_log (fire-and-forget)
-      supabase
+      // Registra tentativa de checkout no audit_log (assíncrono)
+      (supabase as any)
         .from('audit_logs')
-        .insert({ user_id: user.id, action: 'checkout.started', metadata: { plan: 'monthly', price_brl: 97 } })
-        .then(() => null)
-        .catch(() => null)
+        .insert([{ 
+          user_id: user.id, 
+          action: 'checkout.started', 
+          metadata: { plan: 'monthly', price_brl: 97 } 
+        }])
+        .then(() => null);
 
       const { data, error } = await supabase.functions.invoke('pagbank-checkout', {
         body: {

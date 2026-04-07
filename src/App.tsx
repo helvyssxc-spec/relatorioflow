@@ -13,10 +13,14 @@ import Dashboard from '@/pages/Dashboard'
 import NewReport from '@/pages/NewReport'
 import DiarioObra from '@/pages/DiarioObra'
 import RelatorioTecnico from '@/pages/RelatorioTecnico'
+import RelatorioManutencao from '@/pages/RelatorioManutencao'
 import ReportView from '@/pages/ReportView'
 import Reports from '@/pages/Reports'
 import Settings from '@/pages/Settings'
+import Support from '@/pages/Support'
+import AdminTickets from '@/pages/AdminTickets'
 import Checkout from '@/pages/Checkout'
+import { Analytics } from '@/components/Analytics'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,14 +56,18 @@ export default function App() {
               <Route path="relatorio/novo" element={<NewReport />} />
               <Route path="relatorio/novo/diario" element={<DiarioObra />} />
               <Route path="relatorio/novo/tecnico" element={<RelatorioTecnico />} />
+              <Route path="relatorio/novo/manutencao" element={<RelatorioManutencao />} />
               <Route path="relatorio/:id" element={<ReportView />} />
               <Route path="reports" element={<Reports />} />
               <Route path="configuracoes" element={<Settings />} />
+              <Route path="suporte" element={<Support />} />
+              <Route path="admin/tickets" element={<AdminTickets />} />
               <Route path="plano" element={<Checkout />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Analytics />
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </BrowserRouter>

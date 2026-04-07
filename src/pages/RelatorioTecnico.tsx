@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import {
-  FileText, Plus, Trash2, Save, FileDown, Loader2,
+  FileText, Plus, Trash2, Save, FileDown, Loader2, Mic, Square, Sparkles,
   ChevronLeft, Target, Microscope, CheckCircle, Camera, 
   AlertTriangle, CheckCircle2, ClipboardList, Info, 
   Search, ListChecks, Award
@@ -67,6 +67,99 @@ export default function RelatorioTecnico() {
   const [syncStatus, setSyncStatus] = useState<import('@/components/ui/SyncStatus').SyncState>('synced')
   const [lastSynced, setLastSynced] = useState<string>('')
   const [currentStep, setCurrentStep] = useState(0)
+
+  // ── Global AI Assistant ──
+  const [isRecording, setIsRecording] = useState(false)
+  const [transcript, setTranscript] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [recognition, setRecognition] = useState<any>(null)
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition()
+      rec.continuous = true
+      rec.interimResults = true
+      rec.lang = 'pt-BR'
+      rec.onresult = (e: any) => {
+        let text = ''
+        for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript
+        setTranscript(text)
+      }
+      setRecognition(rec)
+    }
+  }, [])
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognition?.stop()
+    } else { 
+      setTranscript('')
+      recognition?.start() 
+    }
+    setIsRecording(!isRecording)
+  }
+
+  const handleGlobalAI = async () => {
+    if (!transcript.trim()) { 
+       toast.error('Grave um áudio primeiro!')
+       return 
+    }
+    
+    setIsGenerating(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ 
+          notes: transcript, 
+          reportType: 'relatorio_tecnico',
+          action: 'generate'
+        })
+      })
+      
+      const text = await res.text()
+      const cleanText = text.split('\n__RF_USAGE__')[0]
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+      
+      if (jsonMatch) {
+         const parsed = JSON.parse(jsonMatch[0])
+         if (parsed.objetivo) setValue('objetivo', parsed.objetivo)
+         if (parsed.metodologia) setValue('metodologia', parsed.metodologia)
+         if (parsed.conclusao) setValue('conclusao', parsed.conclusao)
+         
+         // Diagnóstico e Recomendações (mais complexos com fieldArrays)
+         if (parsed.diagnostico) {
+            reset({ ...watch(), diagnostico: parsed.diagnostico })
+         }
+         if (parsed.recomendacoes) {
+            reset({ ...watch(), recomendacoes: parsed.recomendacoes })
+         }
+         
+         // Registro de Telemetria (Giroscópio de IA)
+         const inputTokens = Math.ceil(transcript.length / 4);
+         const outputTokens = Math.ceil(jsonMatch[0].length / 4);
+         await (supabase as any).rpc('record_ai_usage', {
+           p_user_id: user?.id,
+           p_report_type: 'tecnico',
+           p_input_tokens: inputTokens,
+           p_output_tokens: outputTokens
+         });
+
+         toast.success('Campos preenchidos pela IA!')
+      }
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro ao processar com IA: ' + e.message)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   const steps = [
     { title: 'Identificação', description: 'Dados Gerais' },
@@ -266,6 +359,38 @@ export default function RelatorioTecnico() {
         </div>
         <SyncStatus status={syncStatus} lastSynced={lastSynced} />
       </div>
+
+      {/* ── ASSISTENTE GLOBAL ── */}
+      <Card className="border-indigo-200 bg-indigo-50/30 overflow-hidden">
+        <CardContent className="p-4 flex items-center gap-4">
+           <Button
+            type="button"
+            onClick={toggleRecording}
+            variant={isRecording ? "destructive" : "outline"}
+            className={cn("h-12 w-12 rounded-full", isRecording && "animate-pulse")}
+          >
+            {isRecording ? <Square className="w-5 h-5 fill-current" /> : <Mic className="w-5 h-5 text-indigo-600" />}
+          </Button>
+          
+          <div className="flex-1 space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-900">Assistente de Voz Global</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {transcript || (isRecording ? 'Ouvindo vistoria...' : 'Grave um resumo da vistoria para preencher o formulário')}
+            </p>
+          </div>
+
+          {(transcript || isGenerating) && (
+            <Button 
+              onClick={handleGlobalAI} 
+              disabled={isGenerating || isRecording}
+              className="bg-indigo-600 text-white shadow-lg"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              {isGenerating ? 'Preenchendo...' : 'Preencher Tudo'}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="space-y-3 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-indigo-900">
