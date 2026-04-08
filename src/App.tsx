@@ -20,6 +20,7 @@ import Settings from '@/pages/Settings'
 import Support from '@/pages/Support'
 import AdminTickets from '@/pages/AdminTickets'
 import Checkout from '@/pages/Checkout'
+// import RelatorioNBR16280 from '@/pages/RelatorioNBR16280'
 import { Analytics } from '@/components/Analytics'
 
 const queryClient = new QueryClient({
@@ -32,6 +33,7 @@ const queryClient = new QueryClient({
 })
 
 export default function App() {
+  console.log("🛠️ App.tsx: Rendering App...");
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -57,6 +59,7 @@ export default function App() {
               <Route path="relatorio/novo/diario" element={<DiarioObra />} />
               <Route path="relatorio/novo/tecnico" element={<RelatorioTecnico />} />
               <Route path="relatorio/novo/manutencao" element={<RelatorioManutencao />} />
+              {/* <Route path="relatorio/novo/nbr16280" element={<RelatorioNBR16280 />} /> */}
               <Route path="relatorio/:id" element={<ReportView />} />
               <Route path="reports" element={<Reports />} />
               <Route path="configuracoes" element={<Settings />} />
@@ -67,7 +70,7 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          <Analytics />
+          {/* <Analytics /> */}
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </BrowserRouter>

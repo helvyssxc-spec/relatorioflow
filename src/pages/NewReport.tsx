@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-type ReportType = 'diario' | 'tecnico' | 'manutencao'
+type ReportType = 'diario' | 'tecnico' | 'manutencao' | 'nbr16280'
 
 const projectSchema = z.object({
   name: z.string().min(3, 'Nome da obra obrigatório'),
@@ -106,7 +106,7 @@ export default function NewReport() {
       items: [
         { id: 'diario', icon: ClipboardList, label: 'Diário de Obra (RDO)', desc: 'Clima, efetivo, atividades e fotos' },
         { id: 'tecnico', icon: FileText, label: 'Relatório Técnico', desc: 'Vistoria, parecer ou inspeção técnica' },
-        { id: 'NBR16280', icon: Shield, label: 'Laudo de Reforma', desc: 'Conformidade com ABNT NBR 16280' },
+        { id: 'nbr16280', icon: Shield, label: 'Laudo de Reforma', desc: 'Conformidade com ABNT NBR 16280' },
         { id: 'medicao', icon: BarChart, label: 'Medição de Obra', desc: 'Acompanhamento de evolução e custos' },
       ]
     },
@@ -131,7 +131,7 @@ export default function NewReport() {
   ]
 
   const handleSelect = (id: string) => {
-    if (id === 'diario' || id === 'manutencao') {
+    if (id === 'diario' || id === 'manutencao' || id === 'nbr16280') {
       setSelectedType(id as ReportType);
     } else {
       setSelectedType('tecnico');

@@ -22,6 +22,7 @@ function buildSystemPrompt(p: Record<string, any>): string {
     parecer_tecnico:    "Parecer Técnico",
     inspecao:           "Relatório de Inspeção",
     manutencao:         "Relatório de Manutenção",
+    nbr16280:           "Laudo de Reforma (NBR 16280)",
     outro:              "Relatório Técnico",
   };
   const typeLabel = typeLabels[p.reportType] || "Relatório Técnico";

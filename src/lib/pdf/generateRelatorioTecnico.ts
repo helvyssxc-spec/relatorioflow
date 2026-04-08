@@ -40,7 +40,15 @@ export function generateRelatorioTecnicoHTML(data: RelatorioTecnicoPDFData): str
 
   const totalFotos = data.fotosGerais.length + data.diagnostico.reduce((a, d) => a + d.fotos.length, 0)
 
-  return `<!DOCTYPE html>
+    const isNBR16280 = data.numeroRelatorio.startsWith('NBR') || data.objetivo.includes('16280')
+    const badgeText = isNBR16280 
+      ? 'Conformidade ABNT NBR 16280:2015 · Laudo de Reforma' 
+      : 'Padrão ABNT NBR 10719 · Documento Técnico Oficial'
+    const reportSubtitle = isNBR16280
+      ? 'Laudo Técnico de Reforma e Análise de Impacto'
+      : 'Relatório Técnico de Inspeção e Análise'
+
+    return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -68,7 +76,7 @@ export function generateRelatorioTecnicoHTML(data: RelatorioTecnicoPDFData): str
       background: white;
     }
     .cover-top {
-      background: #0f2746;
+      background: ${isNBR16280 ? '#1e3a8a' : '#0f2746'};
       color: white;
       padding: 40px 50px 50px;
       flex-shrink: 0;
@@ -271,9 +279,9 @@ export function generateRelatorioTecnicoHTML(data: RelatorioTecnicoPDFData): str
             <span>${data.creaCau ? `CREA/CAU: ${data.creaCau}` : ''}</span>
           </div>
         </div>
-        <div class="cover-badge">Padrão ABNT NBR 10719 · Documento Técnico Oficial</div>
+        <div class="cover-badge">${badgeText}</div>
         <div class="cover-title">${data.projectName}</div>
-        <div class="cover-subtitle">Relatório Técnico de Inspeção e Análise</div>
+        <div class="cover-subtitle">${reportSubtitle}</div>
       </div>
 
       <div class="cover-body">

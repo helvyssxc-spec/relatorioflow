@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   ClipboardList, FileText, Clock, CheckCircle, ChevronRight,
-  FolderOpen, FilePlus, Search,
+  FolderOpen, FilePlus, Search, Wrench
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,7 +16,7 @@ import { useState } from 'react'
 
 interface ReportItem {
   id: string
-  type: 'diario' | 'tecnico'
+  type: 'diario' | 'tecnico' | 'manutencao'
   title: string
   project: string
   date: string
@@ -29,13 +29,17 @@ function useAllReports() {
     queryKey: ['all-reports', user?.id],
     queryFn: async (): Promise<ReportItem[]> => {
       if (!user) return []
-      const [dailyRes, techRes] = await Promise.all([
+      const [dailyRes, techRes, maintRes] = await Promise.all([
         (supabase as any).from('daily_reports')
           .select('id, report_date, status, projects(name)')
           .eq('user_id', user.id)
           .order('report_date', { ascending: false }),
         (supabase as any).from('technical_reports')
           .select('id, report_date, status, numero_relatorio, projects(name)')
+          .eq('user_id', user.id)
+          .order('report_date', { ascending: false }),
+        (supabase as any).from('maintenance_reports')
+          .select('id, report_date, status, ativo_nome, report_type, projects(name)')
           .eq('user_id', user.id)
           .order('report_date', { ascending: false }),
       ])
@@ -48,12 +52,19 @@ function useAllReports() {
       }))
       const tech: ReportItem[] = (techRes.data || []).map((r: any) => ({
         id: r.id, type: 'tecnico' as const,
-        title: r.numero_relatorio ? `Relatório ${r.numero_relatorio}` : 'Relatório Técnico',
+        title: r.numero_relatorio?.startsWith('NBR') ? `Laudo de Reforma ${r.numero_relatorio}` : (r.numero_relatorio ? `Relatório ${r.numero_relatorio}` : 'Relatório Técnico'),
         project: r.projects?.name || 'Sem projeto',
         date: r.report_date,
         status: r.status,
       }))
-      return [...daily, ...tech].sort((a, b) => b.date.localeCompare(a.date))
+      const maint: ReportItem[] = (maintRes.data || []).map((r: any) => ({
+        id: r.id, type: 'manutencao' as const,
+        title: `Manutenção ${r.report_type === 'preventiva' ? 'Prev.' : 'Corr.'} — ${r.ativo_nome}`,
+        project: r.projects?.name || 'Sem projeto',
+        date: r.report_date,
+        status: r.status,
+      }))
+      return [...daily, ...tech, ...maint].sort((a, b) => b.date.localeCompare(a.date))
     },
     enabled: !!user,
   })
@@ -126,10 +137,14 @@ export default function Reports() {
                   className="flex items-center gap-4 px-6 py-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    report.type === 'diario' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'
+                    report.type === 'diario' ? 'bg-blue-100 text-blue-600' : 
+                    report.type === 'manutencao' ? 'bg-emerald-100 text-emerald-600' :
+                    'bg-indigo-100 text-indigo-600'
                   }`}>
                     {report.type === 'diario'
                       ? <ClipboardList className="w-5 h-5" />
+                      : report.type === 'manutencao'
+                      ? <Wrench className="w-5 h-5" />
                       : <FileText className="w-5 h-5" />
                     }
                   </div>

@@ -15,7 +15,9 @@ interface MaintenancePDFData {
   statusAnterior: string;
   statusPosterior: string;
   descricaoServico?: string;
+  checklists?: { item: string; concluido: boolean }[];
   pecasSubstituidas?: { nome?: string; qtd?: number }[];
+  tempoParada?: string;
   fotos?: { url: string; caption?: string }[];
   observacoes?: string;
   companyName?: string;
@@ -113,6 +115,34 @@ export const openRelatorioManutencaoPDF = (data: MaintenancePDFData) => {
   const splitDesc = doc.splitTextToSize(data.descricaoServico || 'Nenhuma descrição informada.', pageWidth - 30)
   doc.text(splitDesc, 15, y)
   y += splitDesc.length * 5 + 10
+
+  // ── Tempo de Parada ──
+  if (data.tempoParada) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`TEMPO ESTIMADO DE PARADA: ${data.tempoParada}`, 15, y)
+    y += 10
+  }
+
+  // ── Checklist (Tabela) ──
+  if (data.checklists && data.checklists.length > 0) {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('CHECKLIST DE VERIFICAÇÃO', 15, y)
+    y += 5
+    
+    autoTable(doc, {
+      startY: y,
+      head: [['ITEM DE INSPEÇÃO', 'STATUS']],
+      body: (data.checklists || []).map(c => [c.item.toUpperCase(), c.concluido ? '✓ CONCLUÍDO' : '✗ PENDENTE']),
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], fontSize: 8, fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 2 },
+      margin: { left: 15, right: 15 }
+    })
+    
+    y = (doc as any).lastAutoTable.finalY + 12
+  }
 
   // ── Peças Substituídas (Tabela) ──
   if (data.pecasSubstituidas && data.pecasSubstituidas.length > 0) {

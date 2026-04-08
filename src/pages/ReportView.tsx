@@ -22,13 +22,14 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { openDiarioObraPDF } from '@/lib/pdf/generateDiarioObra'
 import { openRelatorioTecnicoPDF } from '@/lib/pdf/generateRelatorioTecnico'
+import { openRelatorioManutencaoPDF } from '@/lib/pdf/generateRelatorioManutencao'
 import { toast } from 'sonner'
 
 export default function ReportView() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
-  const tipo = searchParams.get('tipo') as 'diario' | 'tecnico' | null
+  const tipo = searchParams.get('tipo') as 'diario' | 'tecnico' | 'manutencao' | null
   const { user } = useAuth()
   const { data: profile } = useProfile()
 
@@ -36,7 +37,8 @@ export default function ReportView() {
     queryKey: ['report', id, tipo],
     queryFn: async () => {
       if (!id || !user) return null
-      const table = tipo === 'diario' ? 'daily_reports' : 'technical_reports'
+      const tableMap = { diario: 'daily_reports', tecnico: 'technical_reports', manutencao: 'maintenance_reports' }
+      const table = tableMap[tipo as keyof typeof tableMap] || 'technical_reports'
       const { data, error } = await (supabase as any)
         .from(table)
         .select('*, projects(name, address, client_name, art_rrt)')
@@ -74,6 +76,25 @@ export default function ReportView() {
         atividades: report.atividades || [],
         equipamentos: report.equipamentos || [],
         ocorrencias: report.ocorrencias,
+        fotos: report.fotos || [],
+      })
+      toast.success('PDF aberto em nova aba — use Ctrl+P para salvar')
+    } else if (tipo === 'manutencao') {
+      openRelatorioManutencaoPDF({
+        ...commonData,
+        tecnicoNome: report.responsavel_tecnico || profile?.full_name || '',
+        reportDate: report.report_date,
+        ativoNome: report.ativo_nome,
+        ativoTag: report.ativo_tag,
+        sistema: report.sistema,
+        reportType: report.report_type,
+        statusAnterior: report.status_anterior,
+        statusPosterior: report.status_posterior,
+        checklists: report.checklists || [],
+        pecasSubstituidas: report.pecas_substituidas || [],
+        descricaoServico: report.descricao_servico,
+        tempoParada: report.tempo_parada,
+        observacoes: report.observacoes,
         fotos: report.fotos || [],
       })
       toast.success('PDF aberto em nova aba — use Ctrl+P para salvar')
@@ -130,8 +151,12 @@ export default function ReportView() {
               : <FileText className="w-5 h-5 text-indigo-600" />
             }
             <h1 className="text-xl font-bold text-foreground">
-              {isDiario
+              {tipo === 'diario'
                 ? `Diário de Obra — ${format(new Date(report.report_date + 'T12:00:00'), "dd/MM/yyyy")}`
+                : tipo === 'manutencao'
+                ? `Manutenção ${report.report_type === 'preventiva' ? 'Prev.' : 'Corr.'} — ${report.ativo_nome}`
+                : report.numero_relatorio?.startsWith('NBR') 
+                ? `Laudo de Reforma ${report.numero_relatorio}` 
                 : `Relatório Técnico ${report.numero_relatorio || ''}`
               }
             </h1>
