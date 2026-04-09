@@ -134,7 +134,7 @@ export default function RelatorioNBR16280() {
          toast.success('Laudo de Reforma preenchido pela IA conforme NBR 16280!')
       }
     } catch (e: any) {
-      console.error(e); toast.error('Erro na IA: ' + e.message)
+      toast.error('Erro na IA: ' + e.message)
     } finally { setIsGenerating(false) }
   }
 

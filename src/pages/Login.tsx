@@ -79,7 +79,13 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-500">
+            <div className="mt-4 text-center">
+              <Link to="/esqueci-senha" className="text-sm text-gray-500 hover:text-blue-600">
+                Esqueci minha senha
+              </Link>
+            </div>
+
+            <div className="mt-4 text-center text-sm text-gray-500">
               Não tem conta?{' '}
               <Link to="/cadastro" className="text-blue-600 hover:underline font-medium">Criar conta grátis</Link>
             </div>

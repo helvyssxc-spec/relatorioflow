@@ -22,18 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // FORCE AUDIT MOCK (Temporary for visual verification)
-    const mockUser = {
-      id: '12345',
-      email: 'admin@relatorioflow.com',
-      user_metadata: { full_name: 'Admin Auditor' }
-    } as any;
-    
-    console.log("AUDIT MODE: Forcing mock admin session");
-    setUser(mockUser);
-    setSession({ user: mockUser } as any);
-    setLoading(false);
-    return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
   const signOut = async () => {
     await supabase.auth.signOut()

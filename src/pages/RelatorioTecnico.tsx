@@ -154,7 +154,6 @@ export default function RelatorioTecnico() {
          toast.success('Campos preenchidos pela IA!')
       }
     } catch (e: any) {
-      console.error(e)
       toast.error('Erro ao processar com IA: ' + e.message)
     } finally {
       setIsGenerating(false)
@@ -225,8 +224,7 @@ export default function RelatorioTecnico() {
         if (error) throw error
         setSyncStatus('synced')
         setLastSynced(format(new Date(), 'HH:mm'))
-      } catch (err) {
-        console.error('Cloud Sync Error:', err)
+      } catch {
         setSyncStatus('offline')
       }
     }
@@ -251,7 +249,9 @@ export default function RelatorioTecnico() {
 
     try {
       const compressed = await compressImage(file, 1920, 0.8)
-      const path = `${user.id}/tecnico/${tempId}.${file.type.split('/').pop()}`
+      const rawExt = file.type.split('/').pop() ?? 'jpg'
+      const ext = rawExt.includes('+') ? rawExt.split('+')[0] : rawExt
+      const path = `${user.id}/tecnico/${tempId}.${ext}`
       const { error } = await supabase.storage.from('reports').upload(path, compressed)
       if (error) throw error
       const { data: urlData } = supabase.storage.from('reports').getPublicUrl(path)
@@ -262,7 +262,7 @@ export default function RelatorioTecnico() {
         setFotosSections((prev) => prev.map(s => s.secaoId === target ? { ...s, fotos: s.fotos.map(f => f.id === tempId ? { ...f, url: urlData.publicUrl, uploading: false } : f) } : s))
       }
     } catch (err) {
-      console.error(err); toast.error('Erro no upload');
+      toast.error('Erro no upload');
       if (target === 'geral') setFotosGerais(p => p.filter(f => f.id !== tempId))
       else setFotosSections(p => p.map(s => s.secaoId === target ? { ...s, fotos: s.fotos.filter(f => f.id !== tempId) } : s))
     }

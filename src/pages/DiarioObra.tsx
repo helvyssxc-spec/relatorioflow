@@ -111,6 +111,7 @@ export default function DiarioObra() {
   const fileInputRef                  = useRef<HTMLInputElement>(null)
 
   const [recordState, setRecordState] = useState<RecordState>('idle')
+  const recordStateRef                = useRef<RecordState>('idle')
   const [transcript, setTranscript]   = useState('')
   const [audioTime, setAudioTime]     = useState(0)
   const recognitionRef                = useRef<any>(null)
@@ -175,7 +176,7 @@ export default function DiarioObra() {
           await db.put('sync_queue', {
             id: tempId,
             type: 'photo_upload',
-            payload: { photoId: tempId, userId: user.id, path, type: file.type, bucket: 'report-images' },
+            payload: { photoId: tempId, userId: user.id, path, type: file.type, bucket: 'reports' },
             createdAt: Date.now(),
             attempts: 0
           })
@@ -189,13 +190,13 @@ export default function DiarioObra() {
             })
           }, 200)
 
-          const { error } = await supabase.storage.from('report-images').upload(path, blob, { contentType: 'image/jpeg' })
+          const { error } = await supabase.storage.from('reports').upload(path, blob, { contentType: 'image/jpeg' })
           
           clearInterval(interval)
           if (error) throw error
           
           setUploadProgress(prev => ({ ...prev, [tempId]: 100 }))
-          const { data: urlData } = supabase.storage.from('report-images').getPublicUrl(path)
+          const { data: urlData } = supabase.storage.from('reports').getPublicUrl(path)
           
           setTimeout(() => {
             setPhotos(p => p.map(x => x.id === tempId
@@ -204,8 +205,7 @@ export default function DiarioObra() {
             ))
           }, 300)
         }
-      } catch (e) {
-        console.error(e)
+      } catch {
         setPhotos(p => p.filter(x => x.id !== tempId))
         toast.error('Erro ao processar foto.')
       }
@@ -238,9 +238,10 @@ export default function DiarioObra() {
       setTranscript(finals + (interim ? ' ' + interim : ''))
     }
     rec.onerror = () => stopRecording()
-    rec.onend   = () => { if (recordState === 'recording') stopRecording() }
+    rec.onend   = () => { if (recordStateRef.current === 'recording') stopRecording() }
 
     rec.start()
+    recordStateRef.current = 'recording'
     setRecordState('recording')
     setAudioTime(0)
     audioTimerRef.current = setInterval(() => setAudioTime(t => t + 1), 1000)
@@ -250,6 +251,7 @@ export default function DiarioObra() {
     recognitionRef.current?.stop()
     recognitionRef.current = null
     if (audioTimerRef.current) { clearInterval(audioTimerRef.current); audioTimerRef.current = null }
+    recordStateRef.current = 'done'
     setRecordState('done')
   }, [])
 
@@ -385,7 +387,7 @@ export default function DiarioObra() {
           await (supabase as any).from('daily_reports').upsert(reportData, { onConflict: 'project_id,report_date' })
         }
       }
-    } catch (e) { console.error('Erro ao salvar:', e) }
+    } catch { toast.error('Erro ao salvar relatório. Tente novamente.') }
 
     openDiarioObraPDF({
       projectName:     projectData?.name ?? 'Obra',
@@ -397,11 +399,13 @@ export default function DiarioObra() {
       responsavelNome: profile?.full_name ?? 'Responsável Técnico',
       creaCau:         profile?.crea_cau,
       reportDate:      date,
-      condicaoTempo:   'Não informado',
-      equipe:          [],
-      atividades:      [{ descricao: generatedText, disciplina: 'Geral', percentual_concluido: 100 }],
+      condicaoTempo:   weather || 'Não informado',
+      equipe:          team,
+      atividades:      services.length > 0
+        ? services.map(s => ({ descricao: s.desc, disciplina: 'Geral', percentual_concluido: s.percentual ?? 100, observacao: '' }))
+        : [{ descricao: generatedText || notes || transcript || '', disciplina: 'Geral', percentual_concluido: 100 }],
       equipamentos:    [],
-      ocorrencias:     generatedText,
+      ocorrencias:     occurrences || transcript || notes || generatedText || '',
       fotos:           photos.filter(p => !p.uploading).map(p => ({ url: p.publicUrl || p.url, caption: p.caption })),
     })
 

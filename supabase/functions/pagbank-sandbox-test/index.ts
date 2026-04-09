@@ -14,13 +14,10 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  const CORS = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
   // Proteção simples — só quem conhece o secret pode rodar os testes

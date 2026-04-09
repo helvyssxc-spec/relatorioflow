@@ -2,6 +2,15 @@
  * Minimal Markdown → HTML converter for PDF reports.
  * Handles: ## headings, **bold**, *italic*, - bullet lists, numbered lists, blank line paragraphs.
  */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function mdToHtml(md: string): string {
   if (!md) return ''
 
@@ -11,7 +20,7 @@ export function mdToHtml(md: string): string {
   let inOl = false
 
   const inline = (s: string) =>
-    s
+    escapeHtml(s)
       .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')

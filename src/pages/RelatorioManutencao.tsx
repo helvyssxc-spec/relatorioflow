@@ -110,7 +110,7 @@ export default function RelatorioManutencao() {
           const db = await getDB()
           await db.put('sync_queue', {
             id: tempId, type: 'photo_upload',
-            payload: { photoId: tempId, userId: user.id, path, type: file.type, bucket: 'report-images' },
+            payload: { photoId: tempId, userId: user.id, path, type: file.type, bucket: 'reports' },
             createdAt: Date.now(), attempts: 0
           })
           setPhotos(p => p.map(x => x.id === tempId ? { ...x, uploading: false, offline: true } : x))
@@ -119,12 +119,12 @@ export default function RelatorioManutencao() {
             setUploadProgress(prev => ({ ...prev, [tempId]: Math.min((prev[tempId] || 0) + 5, 95) }))
           }, 200)
 
-          const { error } = await supabase.storage.from('report-images').upload(path, blob)
+          const { error } = await supabase.storage.from('reports').upload(path, blob)
           clearInterval(interval)
           if (error) throw error
           
           setUploadProgress(prev => ({ ...prev, [tempId]: 100 }))
-          const { data: { publicUrl } } = supabase.storage.from('report-images').getPublicUrl(path)
+          const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
           setPhotos(p => p.map(x => x.id === tempId ? { ...x, publicUrl, uploading: false } : x))
         }
       } catch (e) {

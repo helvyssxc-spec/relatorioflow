@@ -17,6 +17,7 @@ import { getDB } from '@/lib/offline/db'
 import { useState, useEffect } from 'react'
 import { useProfile } from '@/hooks/useProfile'
 import { Shield } from 'lucide-react'
+import { OnboardingWizard } from '@/components/OnboardingWizard'
 
 interface ReportItem {
   id: string
@@ -150,6 +151,13 @@ export default function Dashboard() {
   const { data: stats = { projects: 0, daily: 0, technical: 0 } } = useDashboardStats()
   const { isOnline, syncing, triggerSync } = useOfflineSync()
   const [pendingSyncCount, setPendingSyncCount] = useState(0)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    if (profile && (profile as any).onboarding_completed === false) {
+      setShowOnboarding(true)
+    }
+  }, [profile])
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Engenheiro'
 
@@ -165,6 +173,8 @@ export default function Dashboard() {
   }, [])
 
   return (
+    <>
+    {showOnboarding && <OnboardingWizard onComplete={() => setShowOnboarding(false)} />}
     <div className="space-y-10 max-w-5xl animate-fade-in arch-grid min-h-[calc(100vh-120px)] p-4 rounded-3xl">
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -397,6 +407,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
     </div>
+    </>
   )
 }
 

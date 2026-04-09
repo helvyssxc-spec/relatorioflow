@@ -32,7 +32,6 @@ export function Analytics() {
       script.src = 'https://cloud.umami.is/script.js';
       script.setAttribute('data-website-id', config.analytics_umami_id);
       document.head.appendChild(script);
-      console.log('📊 Analytics: Umami injetado.');
     }
 
     // 2. Injeção Google Analytics (gtag.js)
@@ -52,7 +51,6 @@ export function Analytics() {
         gtag('config', '${config.analytics_ga_id}');
       `;
       document.head.appendChild(inlineScript);
-      console.log('📊 Analytics: Google Analytics injetado.');
     }
   }, [config]);
 

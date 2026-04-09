@@ -60,7 +60,6 @@ export function AITextAssistant({ currentText, context, onSelect, onApply, repor
 
       if (!response.ok) {
         const body = await response.text()
-        console.error('Edge Function error:', response.status, body)
         throw new Error(`Erro ${response.status}: ${body}`)
       }
 
@@ -85,7 +84,6 @@ export function AITextAssistant({ currentText, context, onSelect, onApply, repor
       handleResult(fullText.trim())
       toast.success('Texto aprimorado com sucesso!')
     } catch (err: any) {
-      console.error('AITextAssistant error:', err)
       toast.error(err?.message?.includes('401')
         ? 'Sem autorização para usar a IA. Faça login novamente.'
         : 'Erro ao conectar com a IA. Tente novamente em alguns segundos.'

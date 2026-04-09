@@ -1,16 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 // Plano único: R$ 97,00/mês
 const PLAN_AMOUNT = 9700 // centavos
 const PLAN_NAME = 'RelatorioFlow — Plano Mensal'
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -29,12 +26,9 @@ serve(async (req) => {
       )
     }
 
-    const pagbankToken = Deno.env.get('PAGBANK_TOKEN')
-    const isProd = Deno.env.get('PAGBANK_ENV') === 'production'
-    const baseUrl = isProd
-      ? 'https://api.pagseguro.com'
-      : 'https://sandbox.api.pagseguro.com'
-    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
+    const pagbankToken = Deno.env.get('PAGBANK_API_TOKEN')
+    const baseUrl = Deno.env.get('PAGBANK_API_URL') || 'https://sandbox.api.pagseguro.com'
+    const appUrl = Deno.env.get('APP_URL') || 'https://relatorioflow.com.br'
 
     const orderPayload = {
       reference_id: `rf-${user_id}-${Date.now()}`,

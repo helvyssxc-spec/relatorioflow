@@ -67,7 +67,7 @@ export async function tryImmediateSync(itemId: string) {
     await db.delete('sync_queue', itemId)
     return true
   } catch (e) {
-    console.warn('Sync imediato falhou, item mantido na fila offline:', e)
+    void e // sync imediato falhou, item mantido na fila offline
     return false
   }
 }

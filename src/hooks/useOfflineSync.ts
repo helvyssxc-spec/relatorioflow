@@ -59,9 +59,14 @@ export function useOfflineSync() {
 
         // Se deu sucesso, remove da fila
         await db.delete('sync_queue', item.id)
-      } catch (err: any) {
-        console.error('Erro de sincronização:', err)
-        // Opcional: registrar tentativas se quiser limitar retentativas
+      } catch {
+        const retries = (item.retries ?? 0) + 1
+        if (retries >= 3) {
+          await db.delete('sync_queue', item.id)
+          toast.error('Falha ao sincronizar um item após 3 tentativas. Verifique sua conexão.')
+        } else {
+          await db.put('sync_queue', { ...item, retries })
+        }
       }
     }
 
