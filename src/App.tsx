@@ -67,6 +67,7 @@ export default function App() {
               <Route path="relatorio/:id" element={<ReportView />} />
               <Route path="reports" element={<Reports />} />
               <Route path="configuracoes" element={<Settings />} />
+              <Route path="perfil" element={<Navigate to="/app/configuracoes" replace />} />
               <Route path="suporte" element={<Support />} />
               <Route path="admin/tickets" element={<AdminTickets />} />
               <Route path="plano" element={<Checkout />} />
