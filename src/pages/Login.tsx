@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { HardHat, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import MascotLogo from '@/components/MascotLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +20,7 @@ type FormData = z.infer<typeof schema>
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -26,23 +28,24 @@ export default function Login() {
     resolver: zodResolver(schema),
   })
 
+  // Retain intended route
+  const from = location.state?.from || '/app/dashboard'
+
   const onSubmit = async (data: FormData) => {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password })
     setLoading(false)
     if (error) { toast.error('E-mail ou senha incorretos'); return }
-    navigate('/app/dashboard')
+    navigate(from, { replace: true })
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <HardHat className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900 text-xl">RelatorioFlow</span>
+          <Link to="/" className="inline-flex items-center gap-2 group">
+            <MascotLogo className="w-10 h-10 group-hover:-translate-y-1 transition-transform" />
+            <span className="font-black text-gray-900 text-xl tracking-tighter">RelatorioFlow<span className="text-orange-500">.</span></span>
           </Link>
         </div>
 
@@ -73,7 +76,7 @@ export default function Login() {
                 {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11" disabled={loading}>
+              <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 h-11 text-white font-bold" disabled={loading}>
                 {loading && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
                 Entrar
               </Button>
@@ -84,10 +87,10 @@ export default function Login() {
                 Esqueci minha senha
               </Link>
             </div>
-
+            
             <div className="mt-4 text-center text-sm text-gray-500">
               Não tem conta?{' '}
-              <Link to="/cadastro" className="text-blue-600 hover:underline font-medium">Criar conta grátis</Link>
+              <Link to="/cadastro" className="text-orange-600 hover:text-orange-700 hover:underline font-bold">Criar conta grátis</Link>
             </div>
           </CardContent>
         </Card>

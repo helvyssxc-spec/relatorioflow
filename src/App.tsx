@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import Index from '@/pages/Index'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
+import Termos from '@/pages/Termos'
+import Privacidade from '@/pages/Privacidade'
 import Dashboard from '@/pages/Dashboard'
 import NewReport from '@/pages/NewReport'
 import DiarioObra from '@/pages/DiarioObra'
@@ -19,11 +21,13 @@ import Reports from '@/pages/Reports'
 import Settings from '@/pages/Settings'
 import Support from '@/pages/Support'
 import AdminTickets from '@/pages/AdminTickets'
+import AdminAnalytics from '@/pages/AdminAnalytics'
 import Checkout from '@/pages/Checkout'
 import RelatorioNBR16280 from '@/pages/RelatorioNBR16280'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import InstallPrompt from '@/components/InstallPrompt'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +51,8 @@ export default function App() {
             <Route path="/cadastro" element={<Register />} />
             <Route path="/esqueci-senha" element={<ForgotPassword />} />
             <Route path="/redefinir-senha" element={<ResetPassword />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
 
             {/* Protected */}
             <Route
@@ -70,12 +76,14 @@ export default function App() {
               <Route path="perfil" element={<Navigate to="/app/configuracoes" replace />} />
               <Route path="suporte" element={<Support />} />
               <Route path="admin/tickets" element={<AdminTickets />} />
+              <Route path="admin/analytics" element={<AdminAnalytics />} />
               <Route path="plano" element={<Checkout />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           {/* <Analytics /> */}
+          <InstallPrompt />
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </BrowserRouter>

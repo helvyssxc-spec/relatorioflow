@@ -24,6 +24,7 @@ interface DiarioObraPDFData {
   fotos: FotoItem[]
   totalDiasRegistrados?: number
   totalHorasAcumuladas?: number
+  reportNumber?: number
 }
 
 const TEMPO_OPCOES = ['Ensolarado', 'Parcialmente Nublado', 'Nublado', 'Chuva Fraca', 'Chuva Forte', 'Tempestade']
@@ -48,7 +49,12 @@ export function generateDiarioObraHTML(data: DiarioObraPDFData): string {
   const dateObj = new Date(data.reportDate + 'T12:00:00')
   const dateStr = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
   const dateShort = dateObj.toLocaleDateString('pt-BR')
-  const rdoNum = data.reportDate.replace(/-/g, '')
+  
+  // Use sequential reportNumber if provided, otherwise fallback to date string
+  const rdoNum = data.reportNumber 
+    ? String(data.reportNumber).padStart(3, '0') 
+    : data.reportDate.replace(/-/g, '')
+    
   const totalHoras = data.equipe.reduce((a, e) => a + (Number(e.horas) || 0), 0)
 
   // Contador dinâmico de seções — evita pulos na numeração

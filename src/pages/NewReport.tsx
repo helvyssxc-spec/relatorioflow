@@ -51,7 +51,7 @@ export default function NewReport() {
   const queryClient = useQueryClient()
 
   const tipoParam = searchParams.get('tipo') as ReportType | null
-  const [selectedType, setSelectedType] = useState<ReportType | null>(tipoParam)
+  const [selectedType, setSelectedType] = useState<ReportType | null>(tipoParam || 'diario')
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [showNewProject, setShowNewProject] = useState(false)
 
@@ -102,40 +102,15 @@ export default function NewReport() {
 
   const catalog = [
     { 
-      category: 'Construção & Engenharia',
+      category: 'Construção & Gestão',
       items: [
-        { id: 'diario', icon: ClipboardList, label: 'Diário de Obra (RDO)', desc: 'Clima, efetivo, atividades e fotos' },
-        { id: 'tecnico', icon: FileText, label: 'Relatório Técnico', desc: 'Vistoria, parecer ou inspeção técnica' },
-        { id: 'nbr16280', icon: Shield, label: 'Laudo de Reforma', desc: 'Conformidade com ABNT NBR 16280' },
-        { id: 'medicao', icon: BarChart, label: 'Medição de Obra', desc: 'Acompanhamento de evolução e custos' },
-      ]
-    },
-    { 
-      category: 'Manutenção & Sistemas',
-      items: [
-        { id: 'manutencao', icon: Settings, label: 'Manutenção Geral', desc: 'Preventiva ou Corretiva de sistemas' },
-        { id: 'inspecao_predial', icon: Building2, label: 'Inspeção Predial', desc: 'Avaliação de conservação e sistemas' },
-        { id: 'eletrica', icon: Plus, label: 'Laudo Elétrico / SPDA', desc: 'Inspeção de infraestrutura elétrica' },
-        { id: 'ar_condicionado', icon: Settings, label: 'PMOC - Ar Condicionado', desc: 'Plano de Manutenção e Operação' },
-      ]
-    },
-    { 
-      category: 'Vistorias & Perícias',
-      items: [
-        { id: 'vizinhanca', icon: Building2, label: 'Vistoria de Vizinhança', desc: 'Cautelar e registro de danos prévios' },
-        { id: 'entrega_obra', icon: CheckCircle2, label: 'Entrega de Obra', desc: 'Checklist para recebimento de chaves' },
-        { id: 'pericia', icon: Shield, label: 'Perícia Judicial', desc: 'Laudo pericial com rigor normativo' },
-        { id: 'memorial', icon: ClipboardList, label: 'Memorial Descritivo', desc: 'Especificações técnicas de materiais' },
+        { id: 'diario', icon: ClipboardList, label: 'Diário de Obra (RDO)', desc: 'Gerencie clima, efetivo, atividades diárias e registros fotográficos' },
       ]
     }
   ]
 
   const handleSelect = (id: string) => {
-    if (id === 'diario' || id === 'manutencao' || id === 'nbr16280') {
-      setSelectedType(id as ReportType);
-    } else {
-      setSelectedType('tecnico');
-    }
+    setSelectedType(id as ReportType);
   }
 
   return (
@@ -158,25 +133,32 @@ export default function NewReport() {
             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/70 pl-1">{cat.category}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {cat.items.map((t) => {
-                const isSelected = selectedType === t.id || (t.id !== 'diario' && t.id !== 'manutencao' && selectedType === 'tecnico');
+                const isSelected = selectedType === t.id;
                 return (
                   <button key={t.id} onClick={() => handleSelect(t.id)}
                     className={cn(
-                      'group flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-300',
+                      'group relative w-full flex items-start gap-5 p-6 rounded-[28px] border-2 text-left transition-all duration-500 overflow-hidden',
                       isSelected 
-                        ? 'border-primary bg-primary/[0.03] shadow-lg shadow-primary/5'
-                        : 'border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card'
+                        ? 'border-orange-500/50 bg-orange-50/80 dark:bg-orange-500/10 shadow-2xl shadow-orange-500/10 scale-[1.01]'
+                        : 'border-slate-200/50 dark:border-white/5 glass hover:border-orange-500/30 hover:shadow-xl'
                     )}>
+                    {isSelected && <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent pointer-events-none" />}
+                    
                     <div className={cn(
-                      'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-active:scale-95',
-                      isSelected ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                      'relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300',
+                      isSelected ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-orange-500/10 group-hover:text-orange-500'
                     )}>
-                      <t.icon className="w-5 h-5" />
+                      <t.icon className="w-6 h-6" />
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground text-[14px] leading-tight">{t.label}</p>
-                      <p className="text-muted-foreground text-[11px] mt-1 font-medium leading-relaxed">{t.desc}</p>
+                    <div className="relative z-10">
+                      <p className="font-black text-foreground text-lg leading-tight tracking-tight">{t.label}</p>
+                      <p className="text-muted-foreground text-sm mt-1 font-medium leading-relaxed">{t.desc}</p>
                     </div>
+                    {isSelected && (
+                      <div className="absolute top-6 right-6 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-lg animate-in fade-in zoom-in">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -210,14 +192,18 @@ export default function NewReport() {
             {projects.map((p: any) => (
               <button key={p.id} onClick={() => setSelectedProject(p.id)}
                 className={cn(
-                  'flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all',
-                  selectedProject === p.id ? 'border-primary bg-primary/[0.03]' : 'border-border/40 bg-card/30 hover:border-muted-foreground/30'
+                  'flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-300 group hover:-translate-y-0.5',
+                  selectedProject === p.id 
+                    ? 'border-orange-500/50 bg-orange-50/50 dark:bg-orange-500/10 shadow-lg shadow-orange-500/5' 
+                    : 'border-slate-200/50 dark:border-white/5 bg-card/30 glass hover:border-orange-500/30'
                 )}>
                 <div className={cn(
-                  'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
-                  selectedProject === p.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                  'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
+                  selectedProject === p.id 
+                    ? 'bg-orange-500 text-white' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-orange-500 group-hover:bg-orange-500/10'
                 )}>
-                  <Building2 className="w-4 h-4" />
+                  <Building2 className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground text-sm truncate">{p.name}</p>
@@ -231,11 +217,19 @@ export default function NewReport() {
 
       <Button 
         size="lg"
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-13 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]" 
+        className={cn(
+          "w-full h-16 rounded-[20px] font-black text-[13px] uppercase tracking-[0.2em] transition-all duration-500 relative overflow-hidden group border-0",
+          !selectedType || !selectedProject 
+            ? "bg-muted text-muted-foreground cursor-not-allowed" 
+            : "bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/40 hover:-translate-y-1"
+        )}
         disabled={!selectedType || !selectedProject} 
         onClick={handleContinue}
       >
-        Iniciar Relatório agora<ChevronRight className="ml-2 w-5 h-5" />
+        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+        <span className="relative z-10 flex items-center">
+          Iniciar Relatório agora<ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </span>
       </Button>
 
       <Dialog open={showNewProject} onOpenChange={setShowNewProject}>

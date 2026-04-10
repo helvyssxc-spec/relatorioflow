@@ -71,24 +71,24 @@ export default function Support() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="flex flex-col items-center justify-center p-6 text-center space-y-3 bg-indigo-50/20 border-indigo-100 shadow-none hover:bg-indigo-50/40 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-            <HelpCircle className="w-5 h-5" />
+        <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 glass border-slate-200/50 dark:border-white/5 rounded-3xl hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <HelpCircle className="w-6 h-6" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-tighter">Tutorial</p>
-        </Card>
-        <Card className="flex flex-col items-center justify-center p-6 text-center space-y-3 bg-emerald-50/20 border-emerald-100 shadow-none hover:bg-emerald-50/40 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-            <MessageSquare className="w-5 h-5" />
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Tutorial</p>
+        </div>
+        <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 glass border-slate-200/50 dark:border-white/5 rounded-3xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+            <MessageSquare className="w-6 h-6" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-tighter">WhatsApp</p>
-        </Card>
-        <Card className="flex flex-col items-center justify-center p-6 text-center space-y-3 bg-amber-50/20 border-amber-100 shadow-none hover:bg-amber-50/40 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
-            <CheckCircle2 className="w-5 h-5" />
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">WhatsApp</p>
+        </div>
+        <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 glass border-slate-200/50 dark:border-white/5 rounded-3xl hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-tighter">Planos</p>
-        </Card>
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Planos</p>
+        </div>
       </div>
 
       {success ? (
@@ -103,12 +103,15 @@ export default function Support() {
             </CardContent>
          </Card>
       ) : (
-        <Card className="glass shadow-2xl border-indigo-100/50 overflow-hidden rounded-3xl">
-          <CardHeader className="bg-indigo-50/30 border-b border-indigo-100/50 pb-6">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 italic">
-              <Send className="w-4 h-4 text-indigo-600" /> Como podemos ajudar?
+        <Card className="glass shadow-2xl border-slate-200/50 dark:border-white/5 rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-white/40 dark:bg-slate-900/40 border-b border-border/50 pb-6 pt-8 px-8">
+            <CardTitle className="text-2xl font-black flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600">
+                 <Send className="w-5 h-5" />
+              </div>
+              Como podemos ajudar?
             </CardTitle>
-            <CardDescription>Explique o que ocorreu ou envie sua sugestão de melhoria.</CardDescription>
+            <CardDescription className="text-base mt-2">Explique o que ocorreu ou envie sua sugestão de melhoria para nossa equipe técnica.</CardDescription>
           </CardHeader>
           <CardContent className="pt-8 px-8 space-y-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -148,9 +151,9 @@ export default function Support() {
                 {errors.description && <p className="text-[10px] text-red-500 font-bold px-1">{errors.description.message}</p>}
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg shadow-xl shadow-indigo-200 transition-all active:scale-95">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
-                Enviar Chamado para Suporte
+              <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black tracking-widest uppercase text-sm shadow-xl shadow-orange-500/20 hover:shadow-2xl hover:shadow-orange-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Enviar Chamado
               </Button>
             </form>
           </CardContent>
@@ -158,12 +161,12 @@ export default function Support() {
       )}
 
       {/* Dica */}
-      <div className="flex items-center gap-3 p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
-          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm flex-shrink-0">
-             <AlertCircle className="w-4 h-4" />
+      <div className="flex items-center gap-4 p-6 rounded-3xl glass border-slate-200/50 dark:border-white/5">
+          <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm flex-shrink-0">
+             <AlertCircle className="w-5 h-5" />
           </div>
-          <p className="text-xs text-indigo-900 font-medium leading-relaxed">
-             <span className="font-bold">Dica:</span> Antes de abrir um chamado, verifique se você possui conexão com a internet ativa na dashboard.
+          <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+             <span className="font-black text-foreground">Dica Rápida:</span> Antes de abrir um chamado, verifique se seu dispositivo possui conexão com a internet ativa para sincronizar os dados pendentes do RDO.
           </p>
       </div>
     </div>

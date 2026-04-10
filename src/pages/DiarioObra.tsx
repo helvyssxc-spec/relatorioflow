@@ -108,7 +108,8 @@ export default function DiarioObra() {
   // ── state ──
   const [projectData, setProjectData] = useState<any>(null)
   const [photos, setPhotos]           = useState<PhotoItem[]>([])
-  const fileInputRef                  = useRef<HTMLInputElement>(null)
+  const cameraInputRef                = useRef<HTMLInputElement>(null)
+  const galleryInputRef               = useRef<HTMLInputElement>(null)
 
   const [recordState, setRecordState] = useState<RecordState>('idle')
   const recordStateRef                = useRef<RecordState>('idle')
@@ -210,7 +211,8 @@ export default function DiarioObra() {
         toast.error('Erro ao processar foto.')
       }
     }
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+    if (galleryInputRef.current) galleryInputRef.current.value = ''
   }, [user, isOnline, sessionId])
 
   // ── SPEECH-TO-TEXT ────────────────────────────────────────────────────────
@@ -350,6 +352,24 @@ export default function DiarioObra() {
   // ── EXPORT PDF ────────────────────────────────────────────────────────────
   const exportPDF = async () => {
     const date = new Date().toISOString().split('T')[0]
+    
+    // Calcula RDO Number sequencial (Baseado em registros passados para essa obra)
+    let nextReportNum = undefined;
+    try {
+      if (projectId && isOnline) {
+        const { count } = await (supabase as any).from('daily_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('project_id', projectId)
+          .lte('report_date', date); // Includes itself if already saved earlier today
+        
+        // Se houver conflito e 'upsert', o count já inclui o diário atual. 
+        // Lógica segura é assumir o count atual. Se for 0 (primeiro dia salvo), vira 1.
+        if (count !== null) {
+          nextReportNum = Math.max(1, count);
+        }
+      }
+    } catch { console.warn('Erro ao calcular reportNumber'); }
+
     const reportData = {
       user_id:        user.id,
       project_id:     projectId,
@@ -385,11 +405,21 @@ export default function DiarioObra() {
           toast.info('Relatório salvo em modo offline. Será sincronizado em breve.')
         } else {
           await (supabase as any).from('daily_reports').upsert(reportData, { onConflict: 'project_id,report_date' })
+          
+          // Re-calculate after upsert to be safe if it was the first insert
+          if (nextReportNum === undefined) {
+             const { count } = await (supabase as any).from('daily_reports')
+              .select('*', { count: 'exact', head: true })
+              .eq('project_id', projectId)
+              .lte('report_date', date);
+             if (count !== null) nextReportNum = Math.max(1, count);
+          }
         }
       }
     } catch { toast.error('Erro ao salvar relatório. Tente novamente.') }
 
     openDiarioObraPDF({
+      reportNumber:    nextReportNum,
       projectName:     projectData?.name ?? 'Obra',
       projectAddress:  projectData?.address,
       clientName:      projectData?.client_name,
@@ -451,24 +481,35 @@ export default function DiarioObra() {
               <span className="text-xs font-black uppercase tracking-wider text-foreground">Fotos de Campo</span>
             </div>
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => cameraInputRef.current?.click()}
               className="text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-full transition-colors"
             >
-              + Adicionar
+              + Câmera
             </button>
           </div>
 
           <div className="p-3">
             {photos.length === 0 ? (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-28 rounded-xl border-2 border-dashed border-primary/15 bg-primary/3 flex flex-col items-center justify-center gap-2 hover:bg-primary/6 hover:border-primary/30 transition-all active:scale-[0.98]"
-              >
-                <Camera className="w-7 h-7 text-primary/30" />
-                <span className="text-[11px] font-bold text-primary/40 uppercase tracking-wider">
-                  Toque para capturar ou selecionar
-                </span>
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="h-28 rounded-xl border-2 border-dashed border-primary/15 bg-primary/3 flex flex-col items-center justify-center gap-2 hover:bg-primary/6 hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <Camera className="w-7 h-7 text-primary/30" />
+                  <span className="text-[11px] font-bold text-primary/60 uppercase tracking-wider">
+                    Tirar Foto
+                  </span>
+                </button>
+                <button
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="h-28 rounded-xl border-2 border-dashed border-primary/15 bg-primary/3 flex flex-col items-center justify-center gap-2 hover:bg-primary/6 hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <Upload className="w-7 h-7 text-primary/30" />
+                  <span className="text-[11px] font-bold text-primary/60 uppercase tracking-wider">
+                    Galeria
+                  </span>
+                </button>
+              </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {photos.map((photo) => (
@@ -508,23 +549,38 @@ export default function DiarioObra() {
                     )}
                   </div>
                 ))}
-                {/* tile de adicionar mais */}
+                {/* tiles de adicionar mais */}
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square rounded-xl border-2 border-dashed border-primary/20 bg-primary/3 flex items-center justify-center hover:bg-primary/6 transition-all active:scale-95"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-primary/20 bg-primary/3 flex flex-col items-center justify-center hover:bg-primary/6 transition-all active:scale-95"
                 >
-                  <span className="text-xl text-primary/30 font-bold">+</span>
+                  <Camera className="w-6 h-6 text-primary/30 mb-1" />
+                  <span className="text-[9px] text-primary/50 font-bold uppercase">Câmera</span>
+                </button>
+                <button
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-primary/20 bg-primary/3 flex flex-col items-center justify-center hover:bg-primary/6 transition-all active:scale-95"
+                >
+                  <Upload className="w-6 h-6 text-primary/30 mb-1" />
+                  <span className="text-[9px] text-primary/50 font-bold uppercase">Galeria</span>
                 </button>
               </div>
             )}
           </div>
 
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => handlePhotos(e.target.files)}
+          />
+          <input
+            ref={galleryInputRef}
             type="file"
             multiple
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={(e) => handlePhotos(e.target.files)}
           />

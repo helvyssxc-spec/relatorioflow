@@ -5,9 +5,11 @@ import {
   FolderOpen,
   Settings,
   LogOut,
-  HardHat,
   CreditCard,
+  LineChart,
+  LifeBuoy,
 } from 'lucide-react'
+import MascotLogo from '@/components/MascotLogo'
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +37,11 @@ const navAccount = [
   { to: '/app/plano',         icon: CreditCard,  label: 'Meu Plano' },
 ]
 
+const navAdmin = [
+  { to: '/app/admin/analytics', icon: LineChart, label: 'Analytics' },
+  { to: '/app/admin/tickets',   icon: LifeBuoy,  label: 'Tickets' },
+]
+
 export function AppSidebar() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -53,19 +60,13 @@ export function AppSidebar() {
       {/* ── Brand ── */}
       <SidebarHeader className="px-4 py-5 border-b border-slate-200/60 dark:border-slate-800/60">
         <div className="flex items-center gap-3">
-          {/* Logo com gradiente azul-índigo */}
-          <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600
-            flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-            <HardHat className="w-4.5 h-4.5 text-white" strokeWidth={2} />
-            {/* brilho interno */}
-            <div className="absolute inset-0 rounded-xl bg-white/10" />
-          </div>
+          <MascotLogo className="w-10 h-10 shrink-0 transform -translate-x-1" />
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight truncate">
-              RelatórioFlow
+            <span className="font-black text-sm text-slate-900 dark:text-slate-100 leading-tight truncate uppercase tracking-tighter">
+              RelatórioFlow<span className="text-orange-500">.</span>
             </span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">
-              MVP
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest -mt-0.5">
+              Pro Cloud
             </span>
           </div>
         </div>
@@ -90,7 +91,7 @@ export function AppSidebar() {
                           'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium',
                           'transition-all duration-150',
                           isActive
-                            ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/5 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60'
+                            ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/5 text-orange-600 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/60'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                         )
                       }
@@ -100,13 +101,59 @@ export function AppSidebar() {
                           <item.icon
                             className={cn(
                               'w-4 h-4 shrink-0 transition-colors',
-                              isActive ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'
+                              isActive ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500'
                             )}
                             strokeWidth={isActive ? 2.5 : 2}
                           />
                           <span>{item.label}</span>
                           {isActive && (
-                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* ── Administração ── */}
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-widest
+            text-orange-400 dark:text-orange-600 px-2 mb-1">
+            Administração
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-0.5">
+              {navAdmin.map((item) => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium',
+                          'transition-all duration-150',
+                          isActive
+                            ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/5 text-orange-600 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/60'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <item.icon
+                            className={cn(
+                              'w-4 h-4 shrink-0 transition-colors',
+                              isActive ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500'
+                            )}
+                            strokeWidth={isActive ? 2.5 : 2}
+                          />
+                          <span>{item.label}</span>
+                          {isActive && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
                           )}
                         </>
                       )}
@@ -136,7 +183,7 @@ export function AppSidebar() {
                           'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium',
                           'transition-all duration-150',
                           isActive
-                            ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/5 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60'
+                            ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/5 text-orange-600 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/60'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                         )
                       }
@@ -146,13 +193,13 @@ export function AppSidebar() {
                           <item.icon
                             className={cn(
                               'w-4 h-4 shrink-0 transition-colors',
-                              isActive ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'
+                              isActive ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500'
                             )}
                             strokeWidth={isActive ? 2.5 : 2}
                           />
                           <span>{item.label}</span>
                           {isActive && (
-                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
                           )}
                         </>
                       )}
@@ -174,7 +221,7 @@ export function AppSidebar() {
               hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors duration-150 group min-w-0"
           >
             <Avatar className="w-7 h-7 shrink-0">
-              <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+              <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-orange-500 to-amber-600 text-white">
                 {initials}
               </AvatarFallback>
             </Avatar>

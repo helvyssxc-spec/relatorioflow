@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { HardHat, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import MascotLogo from '@/components/MascotLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -58,11 +59,9 @@ export default function Register() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <HardHat className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900 text-xl">RelatorioFlow</span>
+          <Link to="/" className="inline-flex items-center gap-2 group">
+            <MascotLogo className="w-10 h-10 group-hover:-translate-y-1 transition-transform" />
+            <span className="font-black text-gray-900 text-xl tracking-tighter">RelatorioFlow<span className="text-orange-500">.</span></span>
           </Link>
         </div>
 
@@ -72,11 +71,11 @@ export default function Register() {
             <CardDescription>7 dias grátis, sem cartão de crédito</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-blue-50 rounded-xl p-4 mb-6">
+            <div className="bg-orange-50 rounded-xl p-4 mb-6">
               {['Diários de Obra ilimitados', 'Relatórios Técnicos ilimitados', 'PDFs premium com sua marca'].map((b) => (
                 <div key={b} className="flex items-center gap-2 mb-1 last:mb-0">
-                  <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                  <span className="text-sm text-blue-700">{b}</span>
+                  <CheckCircle className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                  <span className="text-sm text-orange-700">{b}</span>
                 </div>
               ))}
             </div>
@@ -116,7 +115,7 @@ export default function Register() {
                 {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11" disabled={loading}>
+               <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 h-11 text-white font-bold" disabled={loading}>
                 {loading && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
                 Criar conta grátis
               </Button>
@@ -124,7 +123,7 @@ export default function Register() {
 
             <div className="mt-6 text-center text-sm text-gray-500">
               Já tem conta?{' '}
-              <Link to="/login" className="text-blue-600 hover:underline font-medium">Fazer login</Link>
+              <Link to="/login" className="text-orange-600 hover:underline font-bold">Fazer login</Link>
             </div>
             <p className="text-center text-xs text-gray-400 mt-4">
               Ao criar sua conta você concorda com nossos termos de uso.

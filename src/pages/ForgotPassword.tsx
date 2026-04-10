@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { HardHat, Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
+import MascotLogo from '@/components/MascotLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,11 +42,9 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <HardHat className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900 text-xl">RelatorioFlow</span>
+          <Link to="/" className="inline-flex items-center gap-2 group">
+            <MascotLogo className="w-10 h-10 group-hover:-translate-y-1 transition-transform" />
+            <span className="font-black text-gray-900 text-xl tracking-tighter">RelatorioFlow<span className="text-orange-500">.</span></span>
           </Link>
         </div>
 
@@ -85,13 +84,13 @@ export default function ForgotPassword() {
                   {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11" disabled={loading}>
+                <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 h-11 text-white font-bold" disabled={loading}>
                   {loading && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
                   Enviar link de redefinição
                 </Button>
 
                 <div className="text-center">
-                  <Link to="/login" className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
+                  <Link to="/login" className="text-sm text-orange-600 hover:underline inline-flex items-center gap-1 font-bold">
                     <ArrowLeft className="w-3 h-3" />
                     Voltar ao login
                   </Link>

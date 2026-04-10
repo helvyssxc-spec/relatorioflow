@@ -33,18 +33,16 @@ function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats', user?.id],
     queryFn: async () => {
-      if (!user) return { projects: 0, daily: 0, technical: 0 }
+      if (!user) return { projects: 0, daily: 0 }
       
-      const [projectsRes, dailyRes, techRes] = await Promise.all([
+      const [projectsRes, dailyRes] = await Promise.all([
         supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true),
         supabase.from('daily_reports').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('technical_reports').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       ])
 
       return {
         projects: projectsRes.count || 0,
         daily: dailyRes.count || 0,
-        technical: techRes.count || 0,
       }
     },
     enabled: !!user,
@@ -108,36 +106,21 @@ function useRecentReports() {
       if (import.meta.env.VITE_SUPABASE_URL?.includes('placeholder') || !import.meta.env.VITE_SUPABASE_URL) {
         return [
           { id: 'r1', type: 'diario', title: 'Diário de Obra — 07/04/2026', project: 'Residencial Aurora', date: '2026-04-07', status: 'finalizado' },
-          { id: 'r2', type: 'manutencao', title: 'Manutenção Prev. — Chiller 01', project: 'Shopping Metrô', date: '2026-04-07', status: 'draft' },
-          { id: 'r3', type: 'tecnico', title: 'Laudo de Estabilidade', project: 'Ponte Rio-Niterói', date: '2026-04-06', status: 'finalizado' }
+          { id: 'r2', type: 'diario', title: 'Diário de Obra — 06/04/2026', project: 'Residencial Aurora', date: '2026-04-06', status: 'draft' }
         ]
       }
 
       if (!user) return []
-      const [dailyRes, techRes, maintRes] = await Promise.all([
-        (supabase as any).from('daily_reports').select('id, report_date, status, projects(name)')
-          .eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-        (supabase as any).from('technical_reports').select('id, report_date, status, numero_relatorio, projects(name)')
-          .eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-        (supabase as any).from('maintenance_reports').select('id, report_date, status, ativo_nome, report_type, projects(name)')
-          .eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-      ])
+      const dailyRes = await (supabase as any).from('daily_reports').select('id, report_date, status, projects(name)')
+          .eq('user_id', user.id).order('created_at', { ascending: false }).limit(8)
+      
       const daily: ReportItem[] = (dailyRes.data || []).map((r: any) => ({
         id: r.id, type: 'diario',
         title: `Diário de Obra — ${format(new Date(r.report_date), 'dd/MM/yyyy')}`,
         project: r.projects?.name || 'Sem projeto', date: r.report_date, status: r.status,
       }))
-      const tech: ReportItem[] = (techRes.data || []).map((r: any) => ({
-        id: r.id, type: 'tecnico',
-        title: r.numero_relatorio ? `Relatório ${r.numero_relatorio}` : 'Relatório Técnico',
-        project: r.projects?.name || 'Sem projeto', date: r.report_date, status: r.status,
-      }))
-      const maint: ReportItem[] = (maintRes.data || []).map((r: any) => ({
-          id: r.id, type: 'manutencao',
-          title: `Manutenção ${r.report_type === 'preventiva' ? 'Prev.' : 'Corr.'} — ${r.ativo_nome}`,
-          project: r.projects?.name || 'Sem projeto', date: r.report_date, status: r.status,
-      }))
-      return [...daily, ...tech, ...maint].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+      
+      return daily
     },
     enabled: !!user,
   })
@@ -211,41 +194,32 @@ export default function Dashboard() {
       </div>
 
       {/* Métricas Rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-        <Card className="glass border-primary/5 p-4 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
-            <FolderOpen className="w-5 h-5" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+        <Card onClick={() => navigate('/app/relatorio/novo')} className="glass border-slate-200/50 dark:border-white/5 p-5 rounded-[24px] flex items-center gap-4 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shadow-inner group-hover:bg-orange-500/10 group-hover:text-orange-500 transition-colors">
+            <FolderOpen className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Obras</p>
-            <p className="text-xl font-bold leading-none">{stats.projects.toString().padStart(2, '0')}</p>
-          </div>
-        </Card>
-        <Card className="glass border-primary/5 p-4 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-            <ClipboardList className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Diários</p>
-            <p className="text-xl font-bold leading-none">{stats.daily.toString().padStart(2, '0')}</p>
+          <div className="text-left">
+            <p className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest">Obras</p>
+            <p className="text-2xl font-black leading-none mt-1">{stats.projects.toString().padStart(2, '0')}</p>
           </div>
         </Card>
-        <Card className="glass border-primary/5 p-4 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-            <FileText className="w-5 h-5" />
+        <Card onClick={() => navigate('/app/reports')} className="glass border-slate-200/50 dark:border-white/5 p-5 rounded-[24px] flex items-center gap-4 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shadow-inner group-hover:bg-emerald-500/10 group-hover:text-emerald-500 transition-colors">
+            <ClipboardList className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Técnicos</p>
-            <p className="text-xl font-bold leading-none">{stats.technical.toString().padStart(2, '0')}</p>
+          <div className="text-left">
+            <p className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest">Diários</p>
+            <p className="text-2xl font-black leading-none mt-1">{stats.daily.toString().padStart(2, '0')}</p>
           </div>
         </Card>
-        <Card className="glass border-primary/10 bg-primary/5 p-4 rounded-2xl flex items-center gap-3 border-dashed">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <CheckCircle className="w-5 h-5" />
+        <Card onClick={() => navigate('/app/configuracoes')} className="bg-slate-900 border-none p-5 rounded-[24px] flex items-center gap-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform">
+            <CheckCircle className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Status</p>
-            <p className="text-xs font-bold text-primary">Total PRO</p>
+          <div className="text-left">
+            <p className="text-[11px] uppercase font-bold text-slate-400 tracking-widest group-hover:text-slate-300 transition-colors">Status</p>
+            <p className="text-sm font-black text-white mt-1">Total PRO</p>
           </div>
         </Card>
       </div>
@@ -281,52 +255,24 @@ export default function Dashboard() {
       )}
 
       {/* Ações rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-        <button
-          onClick={() => navigate('/app/relatorio/novo?tipo=diario')}
-          className="group relative overflow-hidden flex items-center gap-5 p-7 bg-blue-600/90 hover:bg-blue-600 rounded-2xl transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 text-left border border-white/10 shadow-lg"
+      <div className="max-w-md relative z-10">
+      <div className="max-w-md relative z-10 w-full hover:z-20">
+        <Link
+          to="/app/relatorio/novo?tipo=diario"
+          className="block w-full group relative overflow-hidden flex items-center gap-5 p-7 bg-orange-600/90 hover:bg-orange-600 rounded-[28px] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-500/20 text-left border border-white/10 shadow-lg"
         >
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
-          <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-inner">
-            <ClipboardList className="w-7 h-7 text-white" />
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 opacity-90 transition-opacity group-hover:opacity-100 pointer-events-none" />
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white/20 rounded-full blur-3xl group-hover:bg-white/30 transition-colors pointer-events-none" />
+          
+          <div className="relative z-10 w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300 pointer-events-none">
+            <ClipboardList className="w-8 h-8 text-white" />
           </div>
-          <div>
-            <p className="font-bold text-xl text-white">Novo RDO</p>
-            <p className="text-blue-100/80 text-sm mt-0.5">Clima, efetivo e fotos</p>
+          <div className="relative z-10 pointer-events-none">
+            <p className="font-black tracking-tight text-2xl text-white">Criar Diário de Obra</p>
+            <p className="text-orange-50/80 font-medium text-sm mt-1">Novo RDO detalhado em poucos passos</p>
           </div>
-        </button>
-
-        <button
-          onClick={() => navigate('/app/relatorio/novo?tipo=tecnico')}
-          className="group relative overflow-hidden flex items-center gap-5 p-7 bg-indigo-600/90 hover:bg-indigo-600 rounded-2xl transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/20 text-left border border-white/10 shadow-lg"
-        >
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
-          <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-inner">
-            <FileText className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-xl text-white">Relatório Técnico</p>
-            <p className="text-indigo-100/80 text-sm mt-0.5">Laudo ou vistoria técnica</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => {
-            const isAudit = (import.meta.env.VITE_SUPABASE_URL?.includes('placeholder') || !import.meta.env.VITE_SUPABASE_URL);
-            const path = isAudit ? '/app/relatorio/novo/manutencao?project=audit-id' : '/app/relatorio/novo/manutencao';
-            navigate(path);
-          }}
-          className="group relative overflow-hidden flex items-center gap-5 p-7 bg-emerald-600/90 hover:bg-emerald-600 rounded-2xl transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/20 text-left border border-white/10 shadow-lg"
-        >
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
-          <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-inner">
-            <SettingsIcon className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-xl text-white">Manutenção</p>
-            <p className="text-emerald-100/80 text-sm mt-0.5">Preventiva ou Corretiva</p>
-          </div>
-        </button>
+        </Link>
+      </div>
       </div>
 
       {/* Relatórios recentes */}

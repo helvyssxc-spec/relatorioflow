@@ -2,13 +2,14 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, User, Building2, Upload, Save, Shield, BarChart3, BarChart } from 'lucide-react'
+import { Loader2, User, Building2, Upload, Save, Shield, BarChart3, BarChart, ChevronLeft, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -34,6 +35,7 @@ const passwordSchema = z.object({
 type PasswordForm = z.infer<typeof passwordSchema>
 
 export default function Settings() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { data: profile, isLoading } = useProfile()
   const queryClient = useQueryClient()
@@ -132,31 +134,39 @@ export default function Settings() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-        <p className="text-muted-foreground mt-1">Personalize seu perfil e empresa</p>
+        <div className="flex items-center gap-2 mb-1">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full -ml-2">
+             <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+        </div>
+        <p className="text-muted-foreground font-medium pl-1">Personalize seu perfil e empresa</p>
       </div>
 
-      <Tabs defaultValue="perfil">
-        <TabsList className={cn("grid w-full", profile?.is_admin ? "grid-cols-4" : "grid-cols-3")}>
-          <TabsTrigger value="perfil">Perfil</TabsTrigger>
-          <TabsTrigger value="empresa">Empresa</TabsTrigger>
-          <TabsTrigger value="senha">Senha</TabsTrigger>
-          {profile?.is_admin && <TabsTrigger value="admin">Admin</TabsTrigger>}
+      <Tabs defaultValue="perfil" className="space-y-8">
+        <TabsList className={cn("grid w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/50 dark:border-white/10 p-1.5 rounded-2xl shadow-inner gap-1 h-14", profile?.is_admin ? "grid-cols-5" : "grid-cols-4")}>
+          <TabsTrigger value="perfil" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-orange-600 transition-all">Perfil</TabsTrigger>
+          <TabsTrigger value="empresa" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-orange-600 transition-all">Empresa</TabsTrigger>
+          <TabsTrigger value="assinatura" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-orange-600 transition-all">Assinatura</TabsTrigger>
+          <TabsTrigger value="senha" className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:shadow-md data-[state=active]:text-orange-600 transition-all">Senha</TabsTrigger>
+          {profile?.is_admin && <TabsTrigger value="admin" className="rounded-xl font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white">Admin</TabsTrigger>}
         </TabsList>
 
         {/* Perfil pessoal */}
-        <TabsContent value="perfil" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+        <TabsContent value="perfil" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Card className="glass border-slate-200/50 dark:border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+            <CardHeader className="border-b border-border/50 bg-white/40 dark:bg-slate-900/40 pb-6 pt-8 px-8">
+              <CardTitle className="flex items-center gap-3 text-2xl font-black">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600">
+                  <User className="w-5 h-5" />
+                </div>
                 Dados pessoais
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base mt-2">
                 Suas informações aparecem nos relatórios como responsável técnico.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-8">
               <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>Nome completo</Label>
@@ -203,18 +213,20 @@ export default function Settings() {
         </TabsContent>
 
         {/* Empresa */}
-        <TabsContent value="empresa" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
+        <TabsContent value="empresa" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Card className="glass border-slate-200/50 dark:border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+            <CardHeader className="border-b border-border/50 bg-white/40 dark:bg-slate-900/40 pb-6 pt-8 px-8">
+              <CardTitle className="flex items-center gap-3 text-2xl font-black">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600">
+                  <Building2 className="w-5 h-5" />
+                </div>
                 Dados da empresa
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base mt-2">
                 Logo e nome da empresa aparecem no cabeçalho de todos os PDFs.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8 p-8">
               {/* Logo */}
               <div className="space-y-3">
                 <Label>Logo da empresa</Label>
@@ -283,21 +295,116 @@ export default function Settings() {
               </form>
 
               {/* White Label Option */}
-              <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+              <div className="pt-6 border-t border-border/50 flex items-center justify-between">
                  <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                        <Label className="text-sm font-bold">Remover Marca d'água (White Label)</Label>
-                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] font-black px-1.5 py-0">PLATINUM</Badge>
+                       <Badge className="bg-orange-500 text-white border-none text-[9px] font-black px-1.5 py-0">ELITE</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Ocultar o selo "Powered by RelatórioFlow" nos PDFs exportados.</p>
+                    <p className="text-xs text-muted-foreground">Selo "Powered by RelatórioFlow" oculto em PDFs.</p>
                  </div>
                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase mr-2">Desativado</span>
-                    <div className="w-10 h-6 bg-gray-200 rounded-full cursor-not-allowed relative">
-                       <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
-                    </div>
+                    <span className="text-[10px] font-bold text-orange-500 uppercase mr-2">Ativado</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
+                    </label>
                  </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Assinatura / Plano Elite */}
+        <TabsContent value="assinatura" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Card className="rounded-[32px] border border-orange-500/20 bg-orange-50/50 dark:bg-orange-500/10 p-8 glass shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px]" />
+            <div className="flex flex-col md:flex-row items-center gap-6 mb-8 relative z-10 border-b border-border/50 pb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/30">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-center md:text-left flex-1">
+                <p className="font-black text-foreground text-3xl tracking-tight">Plano Elite Ativo</p>
+                <p className="text-muted-foreground text-sm font-medium mt-1">Sua conta possui <span className="font-bold text-orange-600">Acesso Ilimitado Elite</span> liberado.</p>
+              </div>
+              <div className="flex flex-col items-center justify-center bg-white/40 dark:bg-slate-900/40 px-6 py-3 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm">
+                 <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mb-1">Status</span>
+                 <Badge className="bg-emerald-500 text-white border-none shadow-lg shadow-emerald-500/20">Ativo</Badge>
+              </div>
+            </div>
+            
+            <div className="space-y-4 relative z-10">
+              <h3 className="text-[11px] uppercase font-black tracking-widest text-muted-foreground pl-1 mb-4">Benefícios do seu plano</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  'Diários e Relatórios Ilimitados',
+                  'Exportação de PDF Premium (White Label)',
+                  'Integração de Clima via GPS Automático',
+                  'Armazenamento em Nuvem (Fotos e Anexos)',
+                  'Modo Offline Híbrido de Segurança',
+                  'Suporte Prioritário e Backup Diário',
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-3 bg-white/40 dark:bg-slate-900/40 p-4 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm group hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm font-bold text-foreground leading-tight group-hover:text-orange-500 transition-colors">{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Senha */}
+        <TabsContent value="senha" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Card className="glass border-slate-200/50 dark:border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+            <CardHeader className="border-b border-border/50 bg-white/40 dark:bg-slate-900/40 pb-6 pt-8 px-8">
+              <CardTitle className="flex items-center gap-3 text-2xl font-black">
+                <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
+                  <Shield className="w-5 h-5" />
+                </div>
+                Segurança e Senha
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Mantenha sua conta protegida usando uma senha forte.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8">
+              <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Nova senha</Label>
+                  <Input
+                    type="password"
+                    placeholder="Mínimo de 8 caracteres"
+                    {...passwordForm.register('password')}
+                  />
+                  {passwordForm.formState.errors.password && (
+                    <p className="text-xs text-red-500">{passwordForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Confirme a nova senha</Label>
+                  <Input
+                    type="password"
+                    placeholder="Redigite a senha"
+                    {...passwordForm.register('confirmPassword')}
+                  />
+                  {passwordForm.formState.errors.confirmPassword && (
+                    <p className="text-xs text-red-500">{passwordForm.formState.errors.confirmPassword.message}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="bg-slate-900 hover:bg-slate-800 text-white mt-2"
+                  disabled={savingPassword}
+                >
+                  {savingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Alterar senha
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
